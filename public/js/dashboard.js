@@ -1,0 +1,415 @@
+// public/js/dashboard.js
+document.addEventListener('DOMContentLoaded', () => {
+    // --------------------------------------------------------------------------------------------------------------------
+    // Global State & UI Elements
+    // --------------------------------------------------------------------------------------------------------------------
+    const meterCardsContainer = document.getElementById('meter-cards-container');
+    const chartMeterSelect = document.getElementById('chartMeterSelect');
+    const eventMeterSelect = document.getElementById('eventMeterSelect');
+    const alertMeterSelect = document.getElementById('alertMeterSelect');
+    const kwhBarChartCanvas = document.getElementById('kwhBarChart');
+    const powerFactorLineChartCanvas = document.getElementById('powerFactorLineChart');
+    const currentLineChartCanvas = document.getElementById('currentLineChart');
+    const eventsTableBody = document.getElementById('eventsTableBody');
+    const activeAlertsList = document.getElementById('activeAlertsList');
+    const toastContainer = document.querySelector('.toast-container');
+    
+    // In-memory state
+    let meters = [];
+    let activeAlerts = JSON.parse(localStorage.getItem('activeAlerts')) || [];
+    
+    // Default date range (last 24 hours)
+    const defaultEndDate = moment();
+    const defaultStartDate = moment().subtract(24, 'hours');
+    
+    // Initialize date inputs with default values
+    document.getElementById('chartStartDate').value = defaultStartDate.format('YYYY-MM-DDTHH:mm');
+    document.getElementById('chartEndDate').value = defaultEndDate.format('YYYY-MM-DDTHH:mm');
+    document.getElementById('eventStartDate').value = defaultStartDate.format('YYYY-MM-DDTHH:mm');
+    document.getElementById('eventEndDate').value = defaultEndDate.format('YYYY-MM-DDTHH:mm');
+    
+    let kwhChart, pfChart, currentChart;
+
+    // --------------------------------------------------------------------------------------------------------------------
+    // Initialization and Data Fetching
+    // --------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Fetches all meters and populates the dropdowns.
+     */
+    async function fetchMeters() {
+        const response = await fetch('/api/meters');
+        meters = await response.json();
+        
+        // Populate dropdowns
+        meters.forEach(meter => {
+            const option1 = document.createElement('option');
+            option1.value = meter.MeterID;
+            option1.textContent = `${meter.MeterID} - ${meter.Location}`;
+            chartMeterSelect.appendChild(option1);
+            
+            const option2 = option1.cloneNode(true);
+            eventMeterSelect.appendChild(option2);
+
+            const option3 = option1.cloneNode(true);
+            alertMeterSelect.appendChild(option3);
+        });
+        
+        // Select the first meter by default
+        if (meters.length > 0) {
+            chartMeterSelect.value = meters[0].MeterID;
+        }
+
+        // Initial data loads
+        // No need to clear the container, let the updater handle it
+        await updateAllMeterCards(); 
+        fetchAndRenderKWHBarChart();
+        updateHistoricalCharts();
+        fetchAndRenderEvents();
+        renderAlerts();
+    }
+    
+    /**
+     * Updates all meter cards with the latest data, performing partial DOM updates.
+     */
+    async function updateAllMeterCards() {
+        const now = moment();
+        for (const meter of meters) {
+            const liveData = await fetchLiveData(meter.MeterID);
+            
+            // Find existing card or create a new one
+            let cardCol = document.getElementById(`meter-card-${meter.MeterID}`);
+            if (!cardCol) {
+                cardCol = document.createElement('div');
+                cardCol.className = 'col';
+                cardCol.id = `meter-card-${meter.MeterID}`;
+                meterCardsContainer.appendChild(cardCol);
+            }
+            
+            createOrUpdateMeterCard(meter, liveData, now, cardCol);
+        }
+    }
+    
+    /**
+     * Fetches the latest event for a single meter.
+     * @param {number} meterId
+     */
+    async function fetchLiveData(meterId) {
+        const response = await fetch(`/api/live-data/${meterId}`);
+        return await response.json();
+    }
+
+    // --------------------------------------------------------------------------------------------------------------------
+    // Meter Card Rendering (Partial Update)
+    // --------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Creates or updates a meter card in the UI.
+     * @param {object} meter
+     * @param {object} liveData
+     * @param {moment} now
+     * @param {HTMLElement} cardCol - The existing or new card container element
+     */
+    function createOrUpdateMeterCard(meter, liveData, now, cardCol) {
+        let statusLightClass = 'status-red';
+        let lastUpdatedText = 'No data available';
+        let cardBodyContent = `<p class="card-subtitle mb-2">${meter.Description}</p><p class="text-muted">No recent data available.</p>`;
+        
+        if (liveData) {
+            const timestamp = moment(liveData.Timestamp);
+            const minutesAgo = now.diff(timestamp, 'minutes');
+            statusLightClass = minutesAgo < 2 ? 'status-green' : 'status-red';
+            lastUpdatedText = `Last updated: ${timestamp.format('YYYY-MM-DD HH:mm:ss')} (${minutesAgo} mins ago)`;
+            
+            cardBodyContent = `
+                <p class="card-subtitle mb-2">${meter.Description}</p>
+                <div class="meter-data-grid">
+                    <span class="value-label">Avg. Current:</span><span class="value-data">${liveData.AvgCurrent ? liveData.AvgCurrent.toFixed(2) : 'N/A'} A</span>
+                    <span class="value-label">Avg. Voltage:</span><span class="value-data">${liveData.AvgVoltage ? liveData.AvgVoltage.toFixed(2) : 'N/A'} V</span>
+                    <span class="value-label">Avg. Power Factor:</span><span class="value-data">${liveData.AvgPowerFactor ? liveData.AvgPowerFactor.toFixed(2) : 'N/A'}</span>
+                    <span class="value-label">Total KWH:</span><span class="value-data">${liveData.Total_KWH ? liveData.Total_KWH.toFixed(2) : 'N/A'} kWh</span>
+                    <span class="value-label">Install Date:</span><span class="value-data">${moment(meter.InstallationDate).format('YYYY-MM-DD')}</span>
+                </div>
+            `;
+
+            // Check for alerts
+            checkAlerts(meter.MeterID, liveData);
+        }
+        
+        // Only update the innerHTML of the card
+        cardCol.innerHTML = `
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <h5 class="shop-name-box">${meter.Location}</h5>
+                    <div class="d-flex align-items-center gap-2">
+                        <span>${meter.MeterID}</span>
+                        <span class="status-light ${statusLightClass}" title="${statusLightClass === 'status-green' ? 'Online' : 'Offline'}"></span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    ${cardBodyContent}
+                </div>
+                <div class="card-footer text-center">
+                    <small>${lastUpdatedText}</small>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Auto-refresh meter cards every 5 seconds
+    setInterval(updateAllMeterCards, 5000);
+
+    // --------------------------------------------------------------------------------------------------------------------
+    // Chart.js Implementations
+    // --------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Fetches latest KWH data and renders the bar chart.
+     */
+    async function fetchAndRenderKWHBarChart() {
+        const response = await fetch('/api/total-kwh-latest');
+        const data = await response.json();
+        
+        const labels = data.map(d => `${d.Location} (${d.MeterID})`);
+        const kwhData = data.map(d => d.Total_KWH);
+        
+        if (kwhChart) kwhChart.destroy();
+        kwhChart = new Chart(kwhBarChartCanvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Latest Total KWH',
+                    data: kwhData,
+                    backgroundColor: 'rgba(97, 175, 239, 0.8)',
+                    borderColor: '#61afef',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        title: { display: true, text: 'Total KWH' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+                    },
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.1)' } }
+                },
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                }
+            }
+        });
+    }
+    
+    /**
+     * Fetches historical data and renders the line charts.
+     */
+    async function updateHistoricalCharts() {
+        const meterId = chartMeterSelect.value;
+        const startDate = document.getElementById('chartStartDate').value;
+        const endDate = document.getElementById('chartEndDate').value;
+        
+        if (!meterId) return;
+
+        const response = await fetch(`/api/historical-data/${meterId}?startDate=${startDate}&endDate=${endDate}`);
+        const data = await response.json();
+        
+        const labels = data.map(d => moment(d.Timestamp).format('HH:mm:ss'));
+        
+        // Power Factor Chart
+        if (pfChart) pfChart.destroy();
+        pfChart = new Chart(powerFactorLineChartCanvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Avg. Power Factor', data: data.map(d => d.AvgPowerFactor), borderColor: '#61afef', borderWidth: 2, fill: false },
+                    { label: 'PF L1', data: data.map(d => d.PowerFactor_L1), borderColor: '#28a745', borderWidth: 1, fill: false, borderDash: [5, 5] },
+                    { label: 'PF L2', data: data.map(d => d.PowerFactor_L2), borderColor: '#ffc107', borderWidth: 1, fill: false, borderDash: [5, 5] },
+                    { label: 'PF L3', data: data.map(d => d.PowerFactor_L3), borderColor: '#dc3545', borderWidth: 1, fill: false, borderDash: [5, 5] }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Time' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+                    },
+                    y: { 
+                        beginAtZero: true, 
+                        title: { display: true, text: 'Power Factor' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                }
+            }
+        });
+
+        // Current Chart
+        if (currentChart) currentChart.destroy();
+        currentChart = new Chart(currentLineChartCanvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Avg. Current', data: data.map(d => d.AvgCurrent), borderColor: '#61afef', borderWidth: 2, fill: false },
+                    { label: 'Current L1', data: data.map(d => d.Current_L1), borderColor: '#28a745', borderWidth: 1, fill: false, borderDash: [5, 5] },
+                    { label: 'Current L2', data: data.map(d => d.Current_L2), borderColor: '#ffc107', borderWidth: 1, fill: false, borderDash: [5, 5] },
+                    { label: 'Current L3', data: data.map(d => d.Current_L3), borderColor: '#dc3545', borderWidth: 1, fill: false, borderDash: [5, 5] }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Time' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+                    },
+                    y: { 
+                        beginAtZero: true, 
+                        title: { display: true, text: 'Current (A)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' } 
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                }
+            }
+        });
+    }
+    
+    // Event listener for chart update button
+    document.getElementById('updateChartsBtn').addEventListener('click', updateHistoricalCharts);
+    chartMeterSelect.addEventListener('change', updateHistoricalCharts);
+
+    // --------------------------------------------------------------------------------------------------------------------
+    // Event Table
+    // --------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Fetches and renders events in the table.
+     */
+    async function fetchAndRenderEvents() {
+        const meterId = document.getElementById('eventMeterSelect').value;
+        const startDate = document.getElementById('eventStartDate').value;
+        const endDate = document.getElementById('eventEndDate').value;
+        
+        const url = `/api/events?meterId=${meterId}&startDate=${startDate}&endDate=${endDate}`;
+        const response = await fetch(url);
+        const events = await response.json();
+        
+        eventsTableBody.innerHTML = '';
+        events.forEach(event => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${event.EventID}</td>
+                <td>${event.MeterID}</td>
+                <td>${moment(event.Timestamp).format('YYYY-MM-DD HH:mm:ss')}</td>
+                <td>${event.AvgCurrent ? event.AvgCurrent.toFixed(2) : 'N/A'}</td>
+                <td>${event.AvgVoltage ? event.AvgVoltage.toFixed(2) : 'N/A'}</td>
+                <td>${event.AvgPowerFactor ? event.AvgPowerFactor.toFixed(2) : 'N/A'}</td>
+                <td>${event.Total_KW ? event.Total_KW.toFixed(2) : 'N/A'}</td>
+                <td>${event.Total_KWH ? event.Total_KWH.toFixed(2) : 'N/A'}</td>
+            `;
+            eventsTableBody.appendChild(row);
+        });
+    }
+
+    // Event listener for event table filter button
+    document.getElementById('filterEventsBtn').addEventListener('click', fetchAndRenderEvents);
+    
+    // --------------------------------------------------------------------------------------------------------------------
+    // Alert System
+    // --------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Renders the list of active alerts.
+     */
+    function renderAlerts() {
+        activeAlertsList.innerHTML = '';
+        activeAlerts.forEach((alert, index) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+            listItem.innerHTML = `
+                <div>
+                    <strong>Meter ${alert.meterId}</strong>: ${alert.param} > ${alert.threshold}
+                    <p class="text-muted mb-0"><small>"${alert.message}"</small></p>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-alert-btn" data-index="${index}"><i class="bi bi-x-lg"></i></button>
+            `;
+            activeAlertsList.appendChild(listItem);
+        });
+    }
+    
+    // Event listener for alert form submission
+    document.getElementById('alertForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const meterId = document.getElementById('alertMeterSelect').value;
+        const param = document.getElementById('alertParamSelect').value;
+        const threshold = parseFloat(document.getElementById('alertThreshold').value);
+        const message = document.getElementById('alertMessage').value;
+        
+        activeAlerts.push({ meterId, param, threshold, message });
+        localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
+        
+        renderAlerts();
+        e.target.reset();
+    });
+
+    // Event listener for removing an alert
+    activeAlertsList.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-alert-btn')) {
+            const index = e.target.getAttribute('data-index');
+            activeAlerts.splice(index, 1);
+            localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
+            renderAlerts();
+        }
+    });
+
+    /**
+     * Checks if any live data exceeds the set alert thresholds.
+     * @param {number} meterId
+     * @param {object} liveData
+     */
+    function checkAlerts(meterId, liveData) {
+        activeAlerts.forEach(alert => {
+            if (alert.meterId == meterId) {
+                const value = liveData[alert.param];
+                if (value !== null && value > alert.threshold) {
+                    showToastAlert(alert.message);
+                }
+            }
+        });
+    }
+
+    /**
+     * Shows a Bootstrap toast alert with a message.
+     * @param {string} message
+     */
+    function showToastAlert(message) {
+        const toastHtml = `
+            <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        🔔 ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        const toastElement = document.createElement('div');
+        toastElement.innerHTML = toastHtml;
+        toastContainer.appendChild(toastElement.firstElementChild);
+        
+        const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+        toast.show();
+    }
+
+    // Initial fetch of meters to start the dashboard
+    fetchMeters();
+});
