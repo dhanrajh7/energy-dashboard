@@ -42,6 +42,9 @@ app.get('/add-event', (req, res) => {
 app.post('/api/add-event', (req, res) => {
     const { MeterID, Timestamp, Current_L1, Current_L2, Current_L3, Voltage_L1, Voltage_L2, Voltage_L3, PowerFactor_L1, PowerFactor_L2, PowerFactor_L3, AvgCurrent, AvgVoltage, AvgPowerFactor, Total_KW, Total_KWH } = req.body;
     
+    // Convert local Timestamp to UTC for storage
+    const timestampUTC = moment(Timestamp).utc().format('YYYY-MM-DD HH:mm:ss');
+
     if (!MeterID || !Timestamp) {
         return res.status(400).json({ error: 'MeterID and Timestamp are required.' });
     }
@@ -56,7 +59,7 @@ app.post('/api/add-event', (req, res) => {
     `;
     
     const params = [
-        MeterID, Timestamp, Current_L1, Current_L2, Current_L3, 
+        MeterID, timestampUTC, Current_L1, Current_L2, Current_L3, 
         Voltage_L1, Voltage_L2, Voltage_L3, PowerFactor_L1, 
         PowerFactor_L2, PowerFactor_L3, AvgCurrent, AvgVoltage, 
         AvgPowerFactor, Total_KW, Total_KWH
@@ -73,7 +76,7 @@ app.post('/api/add-event', (req, res) => {
 
 // API route to update all meters with a new event at the current time
 app.post('/api/add-latest-events', (req, res) => {
-    const now = moment().format('YYYY-MM-DD HH:mm:ss');
+    const now = moment().utc().format('YYYY-MM-DD HH:mm:ss');
     const query = `
         INSERT INTO Events (
             MeterID, Timestamp, Current_L1, Current_L2, Current_L3, 
@@ -155,7 +158,7 @@ app.post('/api/events/upload', upload.single('excelFile'), (req, res) => {
             `);
             data.forEach(row => {
                 const params = [
-                    row.EventID, row.MeterID, row.Timestamp, row.Current_L1, row.Current_L2, row.Current_L3,
+                    row.EventID, row.MeterID, moment(row.Timestamp).utc().format('YYYY-MM-DD HH:mm:ss'), row.Current_L1, row.Current_L2, row.Current_L3,
                     row.Voltage_L1, row.Voltage_L2, row.Voltage_L3, row.PowerFactor_L1,
                     row.PowerFactor_L2, row.PowerFactor_L3, row.AvgCurrent, row.AvgVoltage,
                     row.AvgPowerFactor, row.Total_KW, row.Total_KWH
@@ -211,8 +214,11 @@ app.get('/api/live-data/:meterId', (req, res) => {
 app.get('/api/historical-data/:meterId', (req, res) => {
     const { meterId } = req.params;
     const { startDate, endDate } = req.query;
-    const start = startDate ? moment(startDate).format('YYYY-MM-DD HH:mm:ss') : moment().subtract(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
-    const end = endDate ? moment(endDate).format('YYYY-MM-DD HH:mm:ss') : moment().format('YYYY-MM-DD HH:mm:ss');
+    
+    // Convert local times from query parameters to UTC for the query
+    const start = startDate ? moment(startDate).utc().format('YYYY-MM-DD HH:mm:ss') : moment().utc().subtract(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
+    const end = endDate ? moment(endDate).utc().format('YYYY-MM-DD HH:mm:ss') : moment().utc().format('YYYY-MM-DD HH:mm:ss');
+
     db.all('SELECT Timestamp, PowerFactor_L1, PowerFactor_L2, PowerFactor_L3, AvgPowerFactor, Current_L1, Current_L2, Current_L3, AvgCurrent FROM Events WHERE MeterID = ? AND Timestamp BETWEEN ? AND ? ORDER BY Timestamp ASC', [meterId, start, end], (err, rows) => {
         if (err) {
             console.error(`API Error: /api/historical-data/${meterId}`, err);
@@ -227,14 +233,19 @@ app.get('/api/historical-data/:meterId', (req, res) => {
  */
 app.get('/api/events', (req, res) => {
     const { meterId, startDate, endDate } = req.query;
-    const start = startDate ? moment(startDate).format('YYYY-MM-DD HH:mm:ss') : moment().subtract(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
-    const end = endDate ? moment(endDate).format('YYYY-MM-DD HH:mm:ss') : moment().format('YYYY-MM-DD HH:mm:ss');
+    
+    // Convert local times from query parameters to UTC for the query
+    const start = startDate ? moment(startDate).utc().format('YYYY-MM-DD HH:mm:ss') : moment().utc().subtract(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
+    const end = endDate ? moment(endDate).utc().format('YYYY-MM-DD HH:mm:ss') : moment().utc().format('YYYY-MM-DD HH:mm:ss');
+    
     let query = `SELECT * FROM Events WHERE Timestamp BETWEEN ? AND ?`;
     let params = [start, end];
+
     if (meterId) {
         query += ` AND MeterID = ?`;
         params.push(meterId);
     }
+    
     db.all(query + ` ORDER BY Timestamp DESC`, params, (err, rows) => {
         if (err) {
             console.error('API Error: /api/events', err);

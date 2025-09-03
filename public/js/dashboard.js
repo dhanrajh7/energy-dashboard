@@ -13,10 +13,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const eventsTableBody = document.getElementById('eventsTableBody');
     const activeAlertsList = document.getElementById('activeAlertsList');
     const toastContainer = document.querySelector('.toast-container');
-    
+    const powerFactorModalChartCanvas = document.getElementById('powerFactorModalChart');
+    const currentModalChartCanvas = document.getElementById('currentModalChart');
+
     // In-memory state
     let meters = [];
     let activeAlerts = JSON.parse(localStorage.getItem('activeAlerts')) || [];
+    let editingAlertIndex = -1; // -1 means no alert is being edited
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -28,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('eventStartDate').value = defaultStartDate.format('YYYY-MM-DDTHH:mm');
     document.getElementById('eventEndDate').value = defaultEndDate.format('YYYY-MM-DDTHH:mm');
     
-    let kwhChart, pfChart, currentChart;
+    let kwhChart, pfChart, currentChart, pfModalChart, currentModalChart;
 
     // --------------------------------------------------------------------------------------------------------------------
     // Initialization and Data Fetching
@@ -136,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
             checkAlerts(meter.MeterID, liveData);
         }
         
-        // Only update the innerHTML of the card
         cardCol.innerHTML = `
             <div class="card h-100 shadow-sm">
                 <div class="card-header">
@@ -181,8 +183,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Latest Total KWH',
                     data: kwhData,
-                    backgroundColor: 'rgba(169, 177, 189, 0.8)',
-                    borderColor: '#A9B1BD',
+                    backgroundColor: 'rgba(97, 175, 239, 0.8)', // Updated to blue
+                    borderColor: '#61afef',
                     borderWidth: 1
                 }]
             },
@@ -334,47 +336,69 @@ document.addEventListener('DOMContentLoaded', () => {
         activeAlertsList.innerHTML = '';
         activeAlerts.forEach((alert, index) => {
             const listItem = document.createElement('li');
-            listItem.className = 'list-group-item d-flex justify-content-between align-items-center';
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent';
             listItem.innerHTML = `
                 <div>
                     <strong>Meter ${alert.meterId}</strong>: ${alert.param} > ${alert.threshold}
                     <p class="text-muted mb-0"><small>"${alert.message}"</small></p>
                 </div>
-                <button type="button" class="btn btn-sm btn-danger remove-alert-btn" data-index="${index}"><i class="bi bi-x-lg"></i></button>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-info edit-alert-btn" data-index="${index}"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger remove-alert-btn" data-index="${index}"><i class="bi bi-x-lg"></i></button>
+                </div>
             `;
             activeAlertsList.appendChild(listItem);
         });
     }
-    
-    // Event listener for alert form submission
+
+    // Handle alert form submission
     document.getElementById('alertForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const meterId = document.getElementById('alertMeterSelect').value;
         const param = document.getElementById('alertParamSelect').value;
         const threshold = parseFloat(document.getElementById('alertThreshold').value);
         const message = document.getElementById('alertMessage').value;
+        const alertIndex = parseInt(document.getElementById('alertIndex').value);
         
-        activeAlerts.push({ meterId, param, threshold, message });
+        if (alertIndex !== -1) {
+            // Update existing alert
+            activeAlerts[alertIndex] = { meterId, param, threshold, message };
+            editingAlertIndex = -1;
+            document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Save Alert';
+        } else {
+            // Add new alert
+            activeAlerts.push({ meterId, param, threshold, message });
+        }
+        
         localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
         
         renderAlerts();
         e.target.reset();
     });
 
-    // Event listener for removing an alert
+    // Handle deleting or editing alerts (using event delegation on parent)
     activeAlertsList.addEventListener('click', (e) => {
-        if (e.target.classList.contains('remove-alert-btn')) {
-            const index = e.target.getAttribute('data-index');
+        if (e.target.closest('.remove-alert-btn')) {
+            const index = e.target.closest('.remove-alert-btn').getAttribute('data-index');
             activeAlerts.splice(index, 1);
             localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
             renderAlerts();
+        } else if (e.target.closest('.edit-alert-btn')) {
+            const index = e.target.closest('.edit-alert-btn').getAttribute('data-index');
+            const alertToEdit = activeAlerts[index];
+            
+            document.getElementById('alertIndex').value = index;
+            document.getElementById('alertMeterSelect').value = alertToEdit.meterId;
+            document.getElementById('alertParamSelect').value = alertToEdit.param;
+            document.getElementById('alertThreshold').value = alertToEdit.threshold;
+            document.getElementById('alertMessage').value = alertToEdit.message;
+            
+            document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Update Alert';
         }
     });
 
     /**
      * Checks if any live data exceeds the set alert thresholds.
-     * @param {number} meterId
-     * @param {object} liveData
      */
     function checkAlerts(meterId, liveData) {
         activeAlerts.forEach(alert => {
@@ -389,7 +413,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Shows a Bootstrap toast alert with a message.
-     * @param {string} message
      */
     function showToastAlert(message) {
         const toastHtml = `
@@ -409,6 +432,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const toast = new bootstrap.Toast(toastContainer.lastElementChild);
         toast.show();
     }
+    
+    // Add event listeners for chart modals
+    document.getElementById('powerFactorLineChart').parentElement.addEventListener('click', () => {
+        if (pfModalChart) pfModalChart.destroy();
+        pfModalChart = new Chart(powerFactorModalChartCanvas, pfChart.config);
+        const powerFactorModal = new bootstrap.Modal(document.getElementById('powerFactorModal'));
+        powerFactorModal.show();
+    });
+
+    document.getElementById('currentLineChart').parentElement.addEventListener('click', () => {
+        if (currentModalChart) currentModalChart.destroy();
+        currentModalChart = new Chart(currentModalChartCanvas, currentChart.config);
+        const currentModal = new bootstrap.Modal(document.getElementById('currentModal'));
+        currentModal.show();
+    });
 
     // Initial fetch of meters to start the dashboard
     fetchMeters();

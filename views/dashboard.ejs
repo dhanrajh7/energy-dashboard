@@ -150,6 +150,9 @@
         .form-label {
             color: var(--text-color) !important; /* Force white color for form labels */
         }
+        .chart-container {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -215,13 +218,13 @@
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card p-3">
+                        <div class="card p-3 chart-container">
                             <h5 class="card-title">Power Factor vs. Time</h5>
                             <canvas id="powerFactorLineChart"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card p-3">
+                        <div class="card p-3 chart-container">
                             <h5 class="card-title">Current vs. Time</h5>
                             <canvas id="currentLineChart"></canvas>
                         </div>
@@ -276,9 +279,14 @@
 
             <div class="tab-pane fade" id="alerts" role="tabpanel" aria-labelledby="alerts-tab">
                 <div class="mt-4">
-                    <h2 class="mb-3">Alert Setup</h2>
+                    <h3 class="mb-3">Active Alerts</h3>
+                    <ul id="activeAlertsList" class="list-group mb-5">
+                        </ul>
+
+                    <h3 class="mt-5">Alert Setup</h3>
                     <div class="card p-4 mb-4">
                         <form id="alertForm" class="row g-3">
+                            <input type="hidden" id="alertIndex" value="-1">
                             <div class="col-md-3">
                                 <label for="alertMeterSelect" class="form-label">Meter</label>
                                 <select id="alertMeterSelect" class="form-select" required></select>
@@ -306,10 +314,34 @@
                             </div>
                         </form>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    <h3 class="mt-5">Active Alerts</h3>
-                    <ul id="activeAlertsList" class="list-group">
-                        </ul>
+    <div class="modal fade" id="powerFactorModal" tabindex="-1" aria-labelledby="powerFactorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="powerFactorModalLabel">Power Factor vs. Time</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="powerFactorModalChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="currentModal" tabindex="-1" aria-labelledby="currentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content bg-dark text-white">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="currentModalLabel">Current vs. Time</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="currentModalChart"></canvas>
                 </div>
             </div>
         </div>
