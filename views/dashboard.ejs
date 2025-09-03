@@ -150,8 +150,21 @@
         .form-label {
             color: var(--text-color) !important; /* Force white color for form labels */
         }
-        .chart-container {
-            cursor: pointer;
+        .tab-content h2, .tab-content h3, .list-group-item {
+            color: var(--text-color) !important;
+        }
+        .list-group-item small {
+            color: var(--secondary-text) !important;
+        }
+        .bg-transparent {
+            background-color: transparent !important;
+        }
+        .alert-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
         }
     </style>
 </head>
@@ -224,13 +237,13 @@
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card p-3 chart-container">
+                        <div class="card p-3">
                             <h5 class="card-title">Power Factor vs. Time</h5>
                             <canvas id="powerFactorLineChart"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card p-3 chart-container">
+                        <div class="card p-3">
                             <h5 class="card-title">Current vs. Time</h5>
                             <canvas id="currentLineChart"></canvas>
                         </div>
