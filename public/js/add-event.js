@@ -11,22 +11,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fetch meters to populate the dropdown
     async function fetchMeters() {
-        const response = await fetch('/api/meters');
-        const meters = await response.json();
-        
-        meters.forEach(meter => {
-            const option = document.createElement('option');
-            option.value = meter.MeterID;
-            option.textContent = `${meter.MeterID} - ${meter.Location}`;
-            meterIdSelect.appendChild(option);
-        });
-        
-        // Set default timestamp to now (local time)
-        document.getElementById('timestampInput').value = moment().format('YYYY-MM-DDTHH:mm');
-        
-        // Load initial data for the first meter
-        if (meters.length > 0) {
-            fetchLatestData(meters[0].MeterID);
+        try {
+            const response = await fetch('/api/meters');
+            const meters = await response.json();
+            
+            meters.forEach(meter => {
+                const option = document.createElement('option');
+                option.value = meter.MeterID;
+                option.textContent = `${meter.MeterID} - ${meter.Location}`;
+                meterIdSelect.appendChild(option);
+            });
+            
+            // Set default timestamp to now (local time)
+            document.getElementById('timestampInput').value = moment().format('YYYY-MM-DDTHH:mm');
+            
+            // Load initial data for the first meter
+            if (meters.length > 0) {
+                fetchLatestData(meters[0].MeterID);
+            }
+        } catch (error) {
+            console.error('Failed to fetch meters:', error);
+            statusMessage.innerHTML = `<div class="alert alert-danger">❌ Failed to load meters.</div>`;
         }
     }
 
@@ -53,6 +58,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('avgPfInput').value = (data.AvgPowerFactor || 0).toFixed(2);
                 document.getElementById('totalKwInput').value = (data.Total_KW || 0).toFixed(2);
                 document.getElementById('totalKwhInput').value = (data.Total_KWH || 0).toFixed(2);
+            } else {
+                console.warn(`No latest data found for Meter ID: ${meterId}`);
             }
         } catch (error) {
             console.error('Failed to fetch latest data:', error);
@@ -105,9 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             Total_KWH: parseFloat(document.getElementById('totalKwhInput').value),
         };
 
-        // Ensure timestamp is current time on submission
-        formData.Timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
-
         try {
             const response = await fetch('/api/add-event', {
                 method: 'POST',
@@ -120,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 statusMessage.innerHTML = `<div class="alert alert-success">✅ ${result.message} Event ID: ${result.eventId}</div>`;
                 form.reset();
                 document.getElementById('timestampInput').value = moment().format('YYYY-MM-DDTHH:mm');
-                fetchLatestData(meterIdSelect.value); // Refresh data after successful add
+                fetchLatestData(meterIdSelect.value);
             } else {
                 statusMessage.innerHTML = `<div class="alert alert-danger">❌ Error: ${result.error}</div>`;
             }

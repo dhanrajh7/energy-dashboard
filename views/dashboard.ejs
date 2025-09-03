@@ -39,7 +39,8 @@
             padding: 20px 0;
         }
         .header-logo {
-            height: 40px;
+            height: 50px; /* Maximized logo height */
+            margin-right: 15px; /* Add some spacing */
         }
         .header-title {
             font-size: 2rem;
@@ -146,6 +147,9 @@
         .card-footer small {
             color: var(--secondary-text) !important;
         }
+        .form-label {
+            color: var(--text-color) !important; /* Force white color for form labels */
+        }
     </style>
 </head>
 <body>
@@ -154,7 +158,7 @@
         <div class="header-top">
             <img src="/images/logo.png" alt="Company Logo" class="header-logo">
             <h1 class="header-title">⚡ Energy Monitoring Dashboard</h1>
-            <div style="width: 40px;"></div>
+            <div style="width: 50px;"></div>
         </div>
 
         <ul class="nav nav-tabs justify-content-center" id="myTab" role="tablist">
@@ -227,7 +231,7 @@
 
             <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
                 <div class="mt-4">
-                    <h2 class="mb-3">Event Data Table</h2>
+                    <h2 class="mb-3">Event Data</h2>
                     <div class="card p-4 mb-4">
                         <div class="row g-3">
                             <div class="col-md-3">
@@ -298,7 +302,7 @@
                                 <input type="text" id="alertMessage" class="form-control" placeholder="e.g., Current is too high!" required>
                             </div>
                             <div class="col-12 text-center">
-                                <button type="submit" class="btn btn-success mt-3"><i class="bi bi-save me-2"></i>Save Alert</button>
+                                <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-save me-2"></i>Save Alert</button>
                             </div>
                         </form>
                     </div>

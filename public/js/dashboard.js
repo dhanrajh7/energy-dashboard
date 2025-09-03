@@ -39,8 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function fetchMeters() {
         const response = await fetch('/api/meters');
-        meters = await response.json();
+        const metersData = await response.json();
         
+        meters = metersData;
+
         // Populate dropdowns
         meters.forEach(meter => {
             const option1 = document.createElement('option');
@@ -61,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Initial data loads
-        // No need to clear the container, let the updater handle it
         await updateAllMeterCards(); 
         fetchAndRenderKWHBarChart();
         updateHistoricalCharts();
@@ -77,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         for (const meter of meters) {
             const liveData = await fetchLiveData(meter.MeterID);
             
-            // Find existing card or create a new one
             let cardCol = document.getElementById(`meter-card-${meter.MeterID}`);
             if (!cardCol) {
                 cardCol = document.createElement('div');
@@ -116,10 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let cardBodyContent = `<p class="card-subtitle mb-2">${meter.Description}</p><p class="text-muted">No recent data available.</p>`;
         
         if (liveData) {
-            const timestamp = moment(liveData.Timestamp);
-            const minutesAgo = now.diff(timestamp, 'minutes');
+            const timestampUTC = moment.utc(liveData.Timestamp);
+            const minutesAgo = now.diff(timestampUTC, 'minutes');
             statusLightClass = minutesAgo < 2 ? 'status-green' : 'status-red';
-            lastUpdatedText = `Last updated: ${timestamp.format('YYYY-MM-DD HH:mm:ss')} (${minutesAgo} mins ago)`;
+            lastUpdatedText = `Last updated: ${timestampUTC.local().format('YYYY-MM-DD HH:mm:ss')} (${minutesAgo} mins ago)`;
             
             cardBodyContent = `
                 <p class="card-subtitle mb-2">${meter.Description}</p>
@@ -181,8 +181,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Latest Total KWH',
                     data: kwhData,
-                    backgroundColor: 'rgba(97, 175, 239, 0.8)',
-                    borderColor: '#61afef',
+                    backgroundColor: 'rgba(169, 177, 189, 0.8)',
+                    borderColor: '#A9B1BD',
                     borderWidth: 1
                 }]
             },
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const response = await fetch(`/api/historical-data/${meterId}?startDate=${startDate}&endDate=${endDate}`);
         const data = await response.json();
         
-        const labels = data.map(d => moment(d.Timestamp).format('HH:mm:ss'));
+        const labels = data.map(d => moment.utc(d.Timestamp).local().format('HH:mm:ss'));
         
         // Power Factor Chart
         if (pfChart) pfChart.destroy();
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: labels,
                 datasets: [
-                    { label: 'Avg. Power Factor', data: data.map(d => d.AvgPowerFactor), borderColor: '#61afef', borderWidth: 2, fill: false },
+                    { label: 'Avg. Power Factor', data: data.map(d => d.AvgPowerFactor), borderColor: '#A9B1BD', borderWidth: 2, fill: false },
                     { label: 'PF L1', data: data.map(d => d.PowerFactor_L1), borderColor: '#28a745', borderWidth: 1, fill: false, borderDash: [5, 5] },
                     { label: 'PF L2', data: data.map(d => d.PowerFactor_L2), borderColor: '#ffc107', borderWidth: 1, fill: false, borderDash: [5, 5] },
                     { label: 'PF L3', data: data.map(d => d.PowerFactor_L3), borderColor: '#dc3545', borderWidth: 1, fill: false, borderDash: [5, 5] }
@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data: {
                 labels: labels,
                 datasets: [
-                    { label: 'Avg. Current', data: data.map(d => d.AvgCurrent), borderColor: '#61afef', borderWidth: 2, fill: false },
+                    { label: 'Avg. Current', data: data.map(d => d.AvgCurrent), borderColor: '#A9B1BD', borderWidth: 2, fill: false },
                     { label: 'Current L1', data: data.map(d => d.Current_L1), borderColor: '#28a745', borderWidth: 1, fill: false, borderDash: [5, 5] },
                     { label: 'Current L2', data: data.map(d => d.Current_L2), borderColor: '#ffc107', borderWidth: 1, fill: false, borderDash: [5, 5] },
                     { label: 'Current L3', data: data.map(d => d.Current_L3), borderColor: '#dc3545', borderWidth: 1, fill: false, borderDash: [5, 5] }
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.innerHTML = `
                 <td>${event.EventID}</td>
                 <td>${event.MeterID}</td>
-                <td>${moment(event.Timestamp).format('YYYY-MM-DD HH:mm:ss')}</td>
+                <td>${moment.utc(event.Timestamp).local().format('YYYY-MM-DD HH:mm:ss')}</td>
                 <td>${event.AvgCurrent ? event.AvgCurrent.toFixed(2) : 'N/A'}</td>
                 <td>${event.AvgVoltage ? event.AvgVoltage.toFixed(2) : 'N/A'}</td>
                 <td>${event.AvgPowerFactor ? event.AvgPowerFactor.toFixed(2) : 'N/A'}</td>
