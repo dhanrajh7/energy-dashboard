@@ -12,13 +12,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentLineChartCanvas = document.getElementById('currentLineChart');
     const eventsTableBody = document.getElementById('eventsTableBody');
     const activeAlertsList = document.getElementById('activeAlertsList');
+    const triggeredAlertsList = document.getElementById('triggeredAlertsList');
     const toastContainer = document.querySelector('.toast-container');
     const powerFactorModalChartCanvas = document.getElementById('powerFactorModalChart');
     const currentModalChartCanvas = document.getElementById('currentModalChart');
+    const alertCountBadge = document.getElementById('alertCountBadge');
 
     // In-memory state
     let meters = [];
     let activeAlerts = JSON.parse(localStorage.getItem('activeAlerts')) || [];
+    let triggeredAlerts = JSON.parse(sessionStorage.getItem('triggeredAlerts')) || [];
     let editingAlertIndex = -1; // -1 means no alert is being edited
     
     // Default date range (last 24 hours)
@@ -71,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHistoricalCharts();
         fetchAndRenderEvents();
         renderAlerts();
+        renderTriggeredAlerts();
     }
     
     /**
@@ -139,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
             checkAlerts(meter.MeterID, liveData);
         }
         
+        // Only update the innerHTML of the card
         cardCol.innerHTML = `
             <div class="card h-100 shadow-sm">
                 <div class="card-header">
@@ -351,6 +356,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderTriggeredAlerts() {
+        triggeredAlertsList.innerHTML = '';
+        triggeredAlerts.forEach(alert => {
+            const listItem = document.createElement('li');
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent';
+            listItem.innerHTML = `
+                <div>
+                    <strong>[${moment.utc(alert.timestamp).local().format('HH:mm:ss')}] Alert on Meter ${alert.meterId}</strong>
+                    <p class="text-muted mb-0"><small>"${alert.message}"</small></p>
+                </div>
+            `;
+            triggeredAlertsList.appendChild(listItem);
+        });
+
+        // Update notification badge
+        if (triggeredAlerts.length > 0) {
+            alertCountBadge.textContent = triggeredAlerts.length;
+            alertCountBadge.classList.remove('d-none');
+        } else {
+            alertCountBadge.classList.add('d-none');
+        }
+    }
+    
     // Handle alert form submission
     document.getElementById('alertForm').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -363,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (alertIndex !== -1) {
             // Update existing alert
             activeAlerts[alertIndex] = { meterId, param, threshold, message };
-            editingAlertIndex = -1;
+            document.getElementById('alertIndex').value = -1;
             document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Save Alert';
         } else {
             // Add new alert
@@ -378,13 +406,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle deleting or editing alerts (using event delegation on parent)
     activeAlertsList.addEventListener('click', (e) => {
-        if (e.target.closest('.remove-alert-btn')) {
-            const index = e.target.closest('.remove-alert-btn').getAttribute('data-index');
+        const targetBtn = e.target.closest('.remove-alert-btn');
+        if (targetBtn) {
+            const index = targetBtn.getAttribute('data-index');
             activeAlerts.splice(index, 1);
             localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
             renderAlerts();
-        } else if (e.target.closest('.edit-alert-btn')) {
-            const index = e.target.closest('.edit-alert-btn').getAttribute('data-index');
+            return;
+        }
+
+        const editBtn = e.target.closest('.edit-alert-btn');
+        if (editBtn) {
+            const index = editBtn.getAttribute('data-index');
             const alertToEdit = activeAlerts[index];
             
             document.getElementById('alertIndex').value = index;
@@ -394,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('alertMessage').value = alertToEdit.message;
             
             document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Update Alert';
+            document.getElementById('alerts-setup-tab').click();
         }
     });
 
@@ -405,7 +439,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (alert.meterId == meterId) {
                 const value = liveData[alert.param];
                 if (value !== null && value > alert.threshold) {
-                    showToastAlert(alert.message);
+                    const isNewAlert = !triggeredAlerts.some(a => 
+                        a.meterId === alert.meterId && 
+                        a.message === alert.message
+                    );
+                    
+                    if (isNewAlert) {
+                        const newAlert = {
+                            timestamp: liveData.Timestamp,
+                            meterId: alert.meterId,
+                            message: alert.message
+                        };
+                        triggeredAlerts.push(newAlert);
+                        sessionStorage.setItem('triggeredAlerts', JSON.stringify(triggeredAlerts));
+                        renderTriggeredAlerts();
+                        showToastAlert(alert.message);
+                    }
                 }
             }
         });
