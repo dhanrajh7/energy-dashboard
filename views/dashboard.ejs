@@ -39,8 +39,9 @@
             padding: 20px 0;
         }
         .header-logo {
-            height: 100px; /* Maximized logo height */
-            margin-right: 50px; /* Add some spacing */
+            height: 50px; /* Maximized logo height */
+            margin-right: 15px; /* Add some spacing */
+            margin-left: 100px; /* Moved 100px to the right */
         }
         .header-title {
             font-size: 2rem;
@@ -237,13 +238,13 @@
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card p-3">
+                        <div class="card p-3 chart-container">
                             <h5 class="card-title">Power Factor vs. Time</h5>
                             <canvas id="powerFactorLineChart"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card p-3">
+                        <div class="card p-3 chart-container">
                             <h5 class="card-title">Current vs. Time</h5>
                             <canvas id="currentLineChart"></canvas>
                         </div>
@@ -307,7 +308,7 @@
             <div class="tab-pane fade" id="alerts-setup" role="tabpanel" aria-labelledby="alerts-setup-tab">
                 <div class="mt-4">
                     <h3 class="mb-3">Active Alert Rules</h3>
-                    <ul id="activeAlertsList" class="list-group mb-5">
+                    <ul id="activeAlertsList" class="list-group">
                         </ul>
                     
                     <hr class="my-5">
