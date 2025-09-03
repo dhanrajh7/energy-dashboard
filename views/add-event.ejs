@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add New Event</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #10151a;
+            --secondary-bg: #1c212a;
+            --card-bg: #21262d;
+            --text-color: #e0e6f1;
+            --secondary-text: #a0acbd;
+            --primary-color: #61afef;
+            --border-color: #3e4451;
+        }
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+        }
+        .container {
+            max-width: 800px;
+        }
+        .card {
+            background-color: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+        }
+        .form-control, .form-select {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: var(--card-bg);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(97, 175, 239, 0.25);
+            color: var(--text-color);
+        }
+        .form-label {
+            color: var(--secondary-text);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--primary-bg);
+        }
+        .btn-primary:hover {
+            background-color: #4da5e6;
+            border-color: #4da5e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center text-primary mb-4">Add New Event Data</h1>
+        <div class="card p-4">
+            <form id="addEventForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="meterIdInput" class="form-label">Meter ID</label>
+                        <select id="meterIdInput" class="form-select" required></select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="timestampInput" class="form-label">Timestamp</label>
+                        <input type="datetime-local" id="timestampInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="currentL1Input" class="form-label">Current L1</label>
+                        <input type="number" step="0.01" id="currentL1Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="currentL2Input" class="form-label">Current L2</label>
+                        <input type="number" step="0.01" id="currentL2Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="currentL3Input" class="form-label">Current L3</label>
+                        <input type="number" step="0.01" id="currentL3Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="voltageL1Input" class="form-label">Voltage L1</label>
+                        <input type="number" step="0.01" id="voltageL1Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="voltageL2Input" class="form-label">Voltage L2</label>
+                        <input type="number" step="0.01" id="voltageL2Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="voltageL3Input" class="form-label">Voltage L3</label>
+                        <input type="number" step="0.01" id="voltageL3Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="pfL1Input" class="form-label">Power Factor L1</label>
+                        <input type="number" step="0.01" id="pfL1Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="pfL2Input" class="form-label">Power Factor L2</label>
+                        <input type="number" step="0.01" id="pfL2Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="pfL3Input" class="form-label">Power Factor L3</label>
+                        <input type="number" step="0.01" id="pfL3Input" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="avgCurrentInput" class="form-label">Avg Current</label>
+                        <input type="number" step="0.01" id="avgCurrentInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="avgVoltageInput" class="form-label">Avg Voltage</label>
+                        <input type="number" step="0.01" id="avgVoltageInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="avgPfInput" class="form-label">Avg Power Factor</label>
+                        <input type="number" step="0.01" id="avgPfInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="totalKwInput" class="form-label">Total KW</label>
+                        <input type="number" step="0.01" id="totalKwInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="totalKwhInput" class="form-label">Total KWH</label>
+                        <input type="number" step="0.01" id="totalKwhInput" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-center mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">Add Event</button>
+                    </div>
+                </div>
+            </form>
+            <div id="statusMessage" class="mt-3 text-center"></div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/add-event.js"></script>
+</body>
+</html>

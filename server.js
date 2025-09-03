@@ -16,7 +16,8 @@ const db = new sqlite3.Database('./EM4.db', (err) => {
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.json());
+app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Middleware to parse URL-encoded bodies
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -25,12 +26,50 @@ app.get('/', (req, res) => {
     res.render('dashboard');
 });
 
-// API Routes
+// New route to render the data entry page
+app.get('/add-event', (req, res) => {
+    res.render('add-event');
+});
+
+// New API route to add a new event
+app.post('/api/add-event', (req, res) => {
+    const { MeterID, Timestamp, Current_L1, Current_L2, Current_L3, Voltage_L1, Voltage_L2, Voltage_L3, PowerFactor_L1, PowerFactor_L2, PowerFactor_L3, AvgCurrent, AvgVoltage, AvgPowerFactor, Total_KW, Total_KWH } = req.body;
+    
+    // Ensure all data is present
+    if (!MeterID || !Timestamp) {
+        return res.status(400).json({ error: 'MeterID and Timestamp are required.' });
+    }
+
+    const query = `
+        INSERT INTO Events (
+            MeterID, Timestamp, Current_L1, Current_L2, Current_L3, 
+            Voltage_L1, Voltage_L2, Voltage_L3, PowerFactor_L1, 
+            PowerFactor_L2, PowerFactor_L3, AvgCurrent, AvgVoltage, 
+            AvgPowerFactor, Total_KW, Total_KWH
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const params = [
+        MeterID, Timestamp, Current_L1, Current_L2, Current_L3, 
+        Voltage_L1, Voltage_L2, Voltage_L3, PowerFactor_L1, 
+        PowerFactor_L2, PowerFactor_L3, AvgCurrent, AvgVoltage, 
+        AvgPowerFactor, Total_KW, Total_KWH
+    ];
+    
+    db.run(query, params, function(err) {
+        if (err) {
+            console.error('Failed to insert new event:', err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        res.status(201).json({ message: 'Event added successfully!', eventId: this.lastID });
+    });
+});
+
+// Existing API routes from your dashboard
 // --------------------------------------------------------------------------------------------------------------------
 
 /**
  * GET /api/meters
- * Fetches all meters from the Meters table.
  */
 app.get('/api/meters', (req, res) => {
     db.all('SELECT MeterID, Location, Description, InstallationDate FROM Meters', [], (err, rows) => {
@@ -45,7 +84,6 @@ app.get('/api/meters', (req, res) => {
 
 /**
  * GET /api/live-data/:meterId
- * Fetches the latest event data for a specific meter.
  */
 app.get('/api/live-data/:meterId', (req, res) => {
     const { meterId } = req.params;
@@ -61,13 +99,11 @@ app.get('/api/live-data/:meterId', (req, res) => {
 
 /**
  * GET /api/historical-data/:meterId
- * Fetches historical event data for a specific meter within a date range.
  */
 app.get('/api/historical-data/:meterId', (req, res) => {
     const { meterId } = req.params;
     const { startDate, endDate } = req.query;
     
-    // SQLite uses `datetime` function for time comparison
     const start = startDate ? moment(startDate).format('YYYY-MM-DD HH:mm:ss') : moment().subtract(24, 'hours').format('YYYY-MM-DD HH:mm:ss');
     const end = endDate ? moment(endDate).format('YYYY-MM-DD HH:mm:ss') : moment().format('YYYY-MM-DD HH:mm:ss');
 
@@ -83,7 +119,6 @@ app.get('/api/historical-data/:meterId', (req, res) => {
 
 /**
  * GET /api/events
- * Fetches all events with optional filters for MeterID and date range.
  */
 app.get('/api/events', (req, res) => {
     const { meterId, startDate, endDate } = req.query;
@@ -111,7 +146,6 @@ app.get('/api/events', (req, res) => {
 
 /**
  * GET /api/total-kwh-latest
- * Fetches the latest Total_KWH for all meters for the bar chart.
  */
 app.get('/api/total-kwh-latest', (req, res) => {
     const query = `
