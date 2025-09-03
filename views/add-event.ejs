@@ -59,80 +59,107 @@
 </head>
 <body>
     <div class="container mt-5">
-        <h1 class="text-center text-primary mb-4">Add New Event Data</h1>
-        <div class="card p-4">
-            <form id="addEventForm">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="meterIdInput" class="form-label">Meter ID</label>
-                        <select id="meterIdInput" class="form-select" required></select>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="timestampInput" class="form-label">Timestamp</label>
-                        <input type="datetime-local" id="timestampInput" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="currentL1Input" class="form-label">Current L1</label>
-                        <input type="number" step="0.01" id="currentL1Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="currentL2Input" class="form-label">Current L2</label>
-                        <input type="number" step="0.01" id="currentL2Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="currentL3Input" class="form-label">Current L3</label>
-                        <input type="number" step="0.01" id="currentL3Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="voltageL1Input" class="form-label">Voltage L1</label>
-                        <input type="number" step="0.01" id="voltageL1Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="voltageL2Input" class="form-label">Voltage L2</label>
-                        <input type="number" step="0.01" id="voltageL2Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="voltageL3Input" class="form-label">Voltage L3</label>
-                        <input type="number" step="0.01" id="voltageL3Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="pfL1Input" class="form-label">Power Factor L1</label>
-                        <input type="number" step="0.01" id="pfL1Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="pfL2Input" class="form-label">Power Factor L2</label>
-                        <input type="number" step="0.01" id="pfL2Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="pfL3Input" class="form-label">Power Factor L3</label>
-                        <input type="number" step="0.01" id="pfL3Input" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="avgCurrentInput" class="form-label">Avg Current</label>
-                        <input type="number" step="0.01" id="avgCurrentInput" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="avgVoltageInput" class="form-label">Avg Voltage</label>
-                        <input type="number" step="0.01" id="avgVoltageInput" class="form-control" required>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="avgPfInput" class="form-label">Avg Power Factor</label>
-                        <input type="number" step="0.01" id="avgPfInput" class="form-control" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="totalKwInput" class="form-label">Total KW</label>
-                        <input type="number" step="0.01" id="totalKwInput" class="form-control" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="totalKwhInput" class="form-label">Total KWH</label>
-                        <input type="number" step="0.01" id="totalKwhInput" class="form-control" required>
-                    </div>
-                    <div class="col-12 text-center mt-4">
-                        <button type="submit" class="btn btn-primary btn-lg">Add Event</button>
-                    </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="/" class="btn btn-secondary"><i class="bi bi-arrow-left me-2"></i>Back to Dashboard</a>
+            <h1 class="text-center text-primary mb-0">Add New Event Data</h1>
+            <button id="updateAllMetersBtn" class="btn btn-primary"><i class="bi bi-clock-history me-2"></i>Update All Meters</button>
+        </div>
+        <div id="updateStatusMessage" class="mt-3 text-center"></div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card p-3 h-100">
+                    <h5 class="card-title text-center">Add Single Event Manually</h5>
+                    <form id="addEventForm" class="mt-3">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="meterIdInput" class="form-label">Meter ID</label>
+                                <select id="meterIdInput" class="form-select" required></select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="timestampInput" class="form-label">Timestamp</label>
+                                <input type="datetime-local" id="timestampInput" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="currentL1Input" class="form-label">Current L1</label>
+                                <input type="number" step="0.01" id="currentL1Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="currentL2Input" class="form-label">Current L2</label>
+                                <input type="number" step="0.01" id="currentL2Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="currentL3Input" class="form-label">Current L3</label>
+                                <input type="number" step="0.01" id="currentL3Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="voltageL1Input" class="form-label">Voltage L1</label>
+                                <input type="number" step="0.01" id="voltageL1Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="voltageL2Input" class="form-label">Voltage L2</label>
+                                <input type="number" step="0.01" id="voltageL2Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="voltageL3Input" class="form-label">Voltage L3</label>
+                                <input type="number" step="0.01" id="voltageL3Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pfL1Input" class="form-label">Power Factor L1</label>
+                                <input type="number" step="0.01" id="pfL1Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pfL2Input" class="form-label">Power Factor L2</label>
+                                <input type="number" step="0.01" id="pfL2Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pfL3Input" class="form-label">Power Factor L3</label>
+                                <input type="number" step="0.01" id="pfL3Input" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="avgCurrentInput" class="form-label">Avg Current</label>
+                                <input type="number" step="0.01" id="avgCurrentInput" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="avgVoltageInput" class="form-label">Avg Voltage</label>
+                                <input type="number" step="0.01" id="avgVoltageInput" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="avgPfInput" class="form-label">Avg Power Factor</label>
+                                <input type="number" step="0.01" id="avgPfInput" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="totalKwInput" class="form-label">Total KW</label>
+                                <input type="number" step="0.01" id="totalKwInput" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="totalKwhInput" class="form-label">Total KWH</label>
+                                <input type="number" step="0.01" id="totalKwhInput" class="form-control" required>
+                            </div>
+                            <div class="col-12 text-center mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">Add Event</button>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="statusMessage" class="mt-3 text-center"></div>
                 </div>
-            </form>
-            <div id="statusMessage" class="mt-3 text-center"></div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3 h-100">
+                    <h5 class="card-title text-center">Update from Excel</h5>
+                    <div class="d-flex justify-content-center my-3">
+                        <button id="downloadTemplateBtn" class="btn btn-success me-2"><i class="bi bi-download me-2"></i>Download Template</button>
+                    </div>
+                    <form id="uploadExcelForm" class="mt-3">
+                        <label for="excelFileInput" class="form-label">Choose Excel File</label>
+                        <input type="file" id="excelFileInput" name="excelFile" class="form-control" required accept=".xlsx,.xls">
+                        <div class="col-12 text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-upload me-2"></i>Upload Events</button>
+                        </div>
+                    </form>
+                    <div id="uploadStatusMessage" class="mt-3 text-center"></div>
+                </div>
+            </div>
         </div>
     </div>
     

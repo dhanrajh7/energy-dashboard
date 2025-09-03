@@ -3,6 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('addEventForm');
     const statusMessage = document.getElementById('statusMessage');
     const meterIdSelect = document.getElementById('meterIdInput');
+    const updateAllMetersBtn = document.getElementById('updateAllMetersBtn');
+    const updateStatusMessage = document.getElementById('updateStatusMessage');
+    const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+    const uploadExcelForm = document.getElementById('uploadExcelForm');
+    const uploadStatusMessage = document.getElementById('uploadStatusMessage');
 
     // Fetch meters to populate the dropdown
     async function fetchMeters() {
@@ -16,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
             meterIdSelect.appendChild(option);
         });
         
-        // Set default timestamp to now
-        document.getElementById('timestampInput').value = new Date().toISOString().slice(0, 16);
+        // Set default timestamp to now (local time)
+        document.getElementById('timestampInput').value = moment().format('YYYY-MM-DDTHH:mm');
         
         // Load initial data for the first meter
         if (meters.length > 0) {
@@ -25,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // New function to fetch and populate latest data for a meter
+    // Function to fetch and populate latest data for a meter
     async function fetchLatestData(meterId) {
         if (!meterId) return;
         
@@ -46,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('avgCurrentInput').value = (data.AvgCurrent || 0).toFixed(2);
                 document.getElementById('avgVoltageInput').value = (data.AvgVoltage || 0).toFixed(2);
                 document.getElementById('avgPfInput').value = (data.AvgPowerFactor || 0).toFixed(2);
-                // Note: Total_KW and Total_KWH are often cumulative or calculated, so we'll just use the latest value as a starting point.
                 document.getElementById('totalKwInput').value = (data.Total_KW || 0).toFixed(2);
                 document.getElementById('totalKwhInput').value = (data.Total_KWH || 0).toFixed(2);
             }
@@ -55,14 +59,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Event Listeners ---
+
+    // When a meter is selected, fetch its latest data
     meterIdSelect.addEventListener('change', (e) => {
         fetchLatestData(e.target.value);
     });
 
+    // Handle "Update All Meters" button click
+    updateAllMetersBtn.addEventListener('click', async () => {
+        try {
+            updateStatusMessage.innerHTML = `<div class="alert alert-info">Updating all meters...</div>`;
+            const response = await fetch('/api/add-latest-events', { method: 'POST' });
+            const result = await response.json();
+            if (response.ok) {
+                updateStatusMessage.innerHTML = `<div class="alert alert-success">✅ ${result.message}</div>`;
+            } else {
+                updateStatusMessage.innerHTML = `<div class="alert alert-danger">❌ Error: ${result.error}</div>`;
+            }
+        } catch (error) {
+            updateStatusMessage.innerHTML = `<div class="alert alert-danger">❌ An unexpected error occurred: ${error.message}</div>`;
+        }
+    });
+
+    // Handle form submission
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // Collect all form data
         const formData = {
             MeterID: parseInt(document.getElementById('meterIdInput').value),
             Timestamp: document.getElementById('timestampInput').value,
@@ -82,26 +105,63 @@ document.addEventListener('DOMContentLoaded', () => {
             Total_KWH: parseFloat(document.getElementById('totalKwhInput').value),
         };
 
+        // Ensure timestamp is current time on submission
+        formData.Timestamp = moment().format('YYYY-MM-DD HH:mm:ss');
+
         try {
             const response = await fetch('/api/add-event', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData),
             });
-
             const result = await response.json();
 
             if (response.ok) {
                 statusMessage.innerHTML = `<div class="alert alert-success">✅ ${result.message} Event ID: ${result.eventId}</div>`;
                 form.reset();
-                document.getElementById('timestampInput').value = new Date().toISOString().slice(0, 16);
+                document.getElementById('timestampInput').value = moment().format('YYYY-MM-DDTHH:mm');
+                fetchLatestData(meterIdSelect.value); // Refresh data after successful add
             } else {
                 statusMessage.innerHTML = `<div class="alert alert-danger">❌ Error: ${result.error}</div>`;
             }
         } catch (error) {
             statusMessage.innerHTML = `<div class="alert alert-danger">❌ An unexpected error occurred: ${error.message}</div>`;
+        }
+    });
+
+    // Handle Excel download button
+    downloadTemplateBtn.addEventListener('click', () => {
+        window.location.href = '/api/events/download';
+    });
+
+    // Handle Excel upload form submission
+    uploadExcelForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('excelFileInput');
+        const file = fileInput.files[0];
+        if (!file) {
+            uploadStatusMessage.innerHTML = `<div class="alert alert-warning">Please select a file to upload.</div>`;
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('excelFile', file);
+
+        try {
+            uploadStatusMessage.innerHTML = `<div class="alert alert-info">Uploading file...</div>`;
+            const response = await fetch('/api/events/upload', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
+            if (response.ok) {
+                uploadStatusMessage.innerHTML = `<div class="alert alert-success">✅ ${result.message}</div>`;
+            } else {
+                uploadStatusMessage.innerHTML = `<div class="alert alert-danger">❌ Error: ${result.error}</div>`;
+            }
+        } catch (error) {
+            uploadStatusMessage.innerHTML = `<div class="alert alert-danger">❌ An unexpected error occurred: ${error.message}</div>`;
         }
     });
 
