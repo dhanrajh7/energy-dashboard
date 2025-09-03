@@ -39,7 +39,7 @@
             padding: 20px 0;
         }
         .header-logo {
-            height: 50px; /* Maximized logo height */
+            height: 100px; /* Maximized logo height */
             margin-right: 15px; /* Add some spacing */
             margin-left: 100px;
         }
@@ -300,6 +300,9 @@
             <div class="tab-pane fade" id="alerts" role="tabpanel" aria-labelledby="alerts-tab">
                 <div class="mt-4">
                     <h2 class="mb-3">Triggered Alerts</h2>
+                    <div class="d-flex justify-content-end mb-3">
+                        <button id="clearAlertsBtn" class="btn btn-danger"><i class="bi bi-trash me-2"></i>Clear All Alerts</button>
+                    </div>
                     <ul id="triggeredAlertsList" class="list-group">
                         </ul>
                 </div>

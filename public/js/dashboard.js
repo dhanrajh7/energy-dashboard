@@ -17,12 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const powerFactorModalChartCanvas = document.getElementById('powerFactorModalChart');
     const currentModalChartCanvas = document.getElementById('currentModalChart');
     const alertCountBadge = document.getElementById('alertCountBadge');
+    const clearAlertsBtn = document.getElementById('clearAlertsBtn');
 
     // In-memory state
     let meters = [];
     let activeAlerts = JSON.parse(localStorage.getItem('activeAlerts')) || [];
     let triggeredAlerts = JSON.parse(sessionStorage.getItem('triggeredAlerts')) || [];
-    let editingAlertIndex = -1; // -1 means no alert is being edited
+    let editingAlertIndex = -1;
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -143,7 +144,6 @@ document.addEventListener('DOMContentLoaded', () => {
             checkAlerts(meter.MeterID, liveData);
         }
         
-        // Only update the innerHTML of the card
         cardCol.innerHTML = `
             <div class="card h-100 shadow-sm">
                 <div class="card-header">
@@ -345,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listItem.innerHTML = `
                 <div>
                     <strong>Meter ${alert.meterId}</strong>: ${alert.param} > ${alert.threshold}
-                    <p class="text-muted mb-0"><small>"${alert.message}"</small></p>
+                    <p class="text-muted mb-0 d-inline-block ms-3">${alert.message}</p>
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-sm btn-info edit-alert-btn" data-index="${index}"><i class="bi bi-pencil"></i></button>
@@ -360,11 +360,11 @@ document.addEventListener('DOMContentLoaded', () => {
         triggeredAlertsList.innerHTML = '';
         triggeredAlerts.forEach(alert => {
             const listItem = document.createElement('li');
-            listItem.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent';
+            listItem.className = 'list-group-item d-flex justify-content-between align-items-center alert-item';
             listItem.innerHTML = `
                 <div>
-                    <strong>[${moment.utc(alert.timestamp).local().format('HH:mm:ss')}] Alert on Meter ${alert.meterId}</strong>
-                    <p class="text-muted mb-0"><small>"${alert.message}"</small></p>
+                    <strong>[${moment.utc(alert.timestamp).local().format('HH:mm:ss')}] Alert on Meter ${alert.meterId}:</strong>
+                    <span class="ms-2">${alert.message}</span>
                 </div>
             `;
             triggeredAlertsList.appendChild(listItem);
@@ -429,6 +429,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Update Alert';
             document.getElementById('alerts-setup-tab').click();
         }
+    });
+    
+    clearAlertsBtn.addEventListener('click', () => {
+        triggeredAlerts = [];
+        sessionStorage.setItem('triggeredAlerts', JSON.stringify(triggeredAlerts));
+        renderTriggeredAlerts();
     });
 
     /**
