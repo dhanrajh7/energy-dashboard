@@ -8,6 +8,8 @@ db.serialize(() => {
     console.log('Clearing old data and tables...');
     db.run('DROP TABLE IF EXISTS Events');
     db.run('DROP TABLE IF EXISTS Meters');
+    db.run('DROP TABLE IF EXISTS AlertRules');
+    db.run('DROP TABLE IF EXISTS TriggeredAlerts');
 
     // Create Meters table
     db.run(`CREATE TABLE IF NOT EXISTS Meters (
@@ -40,6 +42,29 @@ db.serialize(() => {
         FOREIGN KEY(MeterID) REFERENCES Meters(MeterID)
     )`);
 
+    // Create AlertRules table
+    db.run(`CREATE TABLE IF NOT EXISTS AlertRules (
+        AlertID INTEGER PRIMARY KEY AUTOINCREMENT,
+        MeterID INTEGER,
+        Parameter TEXT,
+        Threshold REAL,
+        Message TEXT,
+        IsActive INTEGER DEFAULT 1,
+        FOREIGN KEY(MeterID) REFERENCES Meters(MeterID)
+    )`);
+
+    // Create TriggeredAlerts table
+    db.run(`CREATE TABLE IF NOT EXISTS TriggeredAlerts (
+        TriggeredID INTEGER PRIMARY KEY AUTOINCREMENT,
+        AlertID INTEGER,
+        MeterID INTEGER,
+        StartTime TEXT,
+        EndTime TEXT,
+        Message TEXT,
+        IsActive INTEGER DEFAULT 1,
+        FOREIGN KEY(AlertID) REFERENCES AlertRules(AlertID)
+    )`);
+
     console.log('Inserting initial Meters data...');
     const meterStmt = db.prepare("INSERT INTO Meters VALUES (?, ?, ?, ?, ?)");
     const meterIDs = [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115];
@@ -62,7 +87,7 @@ db.serialize(() => {
     `);
 
     const now = moment();
-    const startDate = moment().subtract(3, 'days'); // <-- Changed to 3 days
+    const startDate = moment().subtract(3, 'days');
 
     meterIDs.forEach(meterID => {
         let currentTimestamp = startDate.clone();
@@ -100,6 +125,20 @@ db.serialize(() => {
 
     eventStmt.finalize();
     console.log('Database EM4.db created and populated successfully with dynamic data.');
+
+    console.log('Populating sample Alert Rules...');
+    const alertRulesStmt = db.prepare(`
+        INSERT INTO AlertRules (MeterID, Parameter, Threshold, Message) 
+        VALUES (?, ?, ?, ?)
+    `);
+    const rulesData = [
+        [101, 'AvgCurrent', 26.0, 'Shop 1 meter high current'],
+        [102, 'AvgVoltage', 232.0, 'Shop 2 meter high voltage']
+    ];
+    rulesData.forEach(data => alertRulesStmt.run(data));
+    alertRulesStmt.finalize();
+
+    console.log('Database setup complete.');
 });
 
 db.close();

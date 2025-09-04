@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // In-memory state
     let meters = [];
     let alertRules = [];
-    const triggeredAlertsState = new Map(JSON.parse(sessionStorage.getItem('triggeredAlertsState')) || []);
+    const triggeredAlertsState = new Map(); // Tracks the state of active alerts to prevent duplicates
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listItem.className = 'list-group-item d-flex justify-content-between align-items-center alert-item';
             listItem.innerHTML = `
                 <div>
-                    <strong>[${moment.utc(alert.Timestamp).local().format('HH:mm:ss')}] Alert on Meter ${alert.MeterID}:</strong>
+                    <strong>[${moment.utc(alert.StartTime).local().format('HH:mm:ss')}] Alert on Meter ${alert.MeterID}:</strong>
                     <span class="ms-2">${alert.Message}</span>
                 </div>
             `;
@@ -446,8 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Tracking the state of triggered alerts to prevent duplicates
-    const triggeredAlertsHistory = new Map();
+    const triggeredAlertsState = new Map();
 
     async function checkAlerts(meterId, liveData, alertRules) {
         alertRules.forEach(async alert => {
@@ -458,8 +457,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const conditionMet = value !== null && value > alert.Threshold;
 
                 if (conditionMet) {
-                    if (!triggeredAlertsHistory.has(alertKey)) {
-                        triggeredAlertsHistory.set(alertKey, true);
+                    if (!triggeredAlertsState.has(alertKey)) {
+                        triggeredAlertsState.set(alertKey, true);
                         try {
                             const response = await fetch('/api/alerts/triggered', {
                                 method: 'POST',
@@ -479,8 +478,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else {
-                    if (triggeredAlertsHistory.has(alertKey)) {
-                        triggeredAlertsHistory.delete(alertKey);
+                    if (triggeredAlertsState.has(alertKey)) {
+                        try {
+                            const response = await fetch(`/api/alerts/triggered/recover/${alert.AlertID}`, { method: 'PUT' });
+                            if (response.ok) {
+                                triggeredAlertsState.delete(alertKey);
+                                renderTriggeredAlerts();
+                            }
+                        } catch (error) {
+                            console.error('Failed to recover alert via API:', error);
+                        }
                     }
                 }
             }

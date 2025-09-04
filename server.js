@@ -65,9 +65,9 @@ app.delete('/api/alerts/rules/:id', (req, res) => {
     });
 });
 
-// GET /api/alerts/triggered - Get all triggered alerts
+// GET /api/alerts/triggered - Get all triggered alerts (only active ones)
 app.get('/api/alerts/triggered', (req, res) => {
-    db.all('SELECT * FROM TriggeredAlerts ORDER BY Timestamp DESC', [], (err, rows) => {
+    db.all('SELECT * FROM TriggeredAlerts WHERE IsActive = 1 ORDER BY StartTime DESC', [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
@@ -77,21 +77,23 @@ app.get('/api/alerts/triggered', (req, res) => {
 app.post('/api/alerts/triggered', (req, res) => {
     const { AlertID, MeterID, Message } = req.body;
     const now = moment().utc().format('YYYY-MM-DD HH:mm:ss');
-    db.run('INSERT INTO TriggeredAlerts (AlertID, MeterID, Timestamp, Message) VALUES (?, ?, ?, ?)', 
+    db.run('INSERT INTO TriggeredAlerts (AlertID, MeterID, StartTime, Message, IsActive) VALUES (?, ?, ?, ?, 1)', 
         [AlertID, MeterID, now, Message], function(err) {
         if (err) return res.status(500).json({ error: err.message });
         res.status(201).json({ message: 'Alert triggered successfully', triggeredId: this.lastID });
     });
 });
 
-// DELETE /api/alerts/triggered - Clear all triggered alerts
-app.delete('/api/alerts/triggered', (req, res) => {
-    db.run('DELETE FROM TriggeredAlerts', [], function(err) {
+// PUT /api/alerts/triggered/recover/:alertId - Mark an alert as recovered
+app.put('/api/alerts/triggered/recover/:alertId', (req, res) => {
+    const { alertId } = req.params;
+    const now = moment().utc().format('YYYY-MM-DD HH:mm:ss');
+    db.run('UPDATE TriggeredAlerts SET EndTime = ?, IsActive = 0 WHERE AlertID = ? AND IsActive = 1', 
+        [now, alertId], function(err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'All triggered alerts cleared successfully' });
+        res.json({ message: 'Alert recovered successfully' });
     });
 });
-
 
 // === EXISTING API ROUTES ===
 /**
