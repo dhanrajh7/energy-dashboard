@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // In-memory state
     let meters = [];
     let alertRules = [];
-    const triggeredAlertsState = new Map(); // Tracks the state of active alerts to prevent duplicates
+    const triggeredAlertsState = new Map();
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -44,37 +44,42 @@ document.addEventListener('DOMContentLoaded', () => {
      * Fetches all meters and populates the dropdowns.
      */
     async function fetchMeters() {
-        const response = await fetch('/api/meters');
-        const metersData = await response.json();
-        
-        meters = metersData;
-
-        // Populate dropdowns
-        meters.forEach(meter => {
-            const option1 = document.createElement('option');
-            option1.value = meter.MeterID;
-            option1.textContent = `${meter.MeterID} - ${meter.Location}`;
-            chartMeterSelect.appendChild(option1);
+        try {
+            const response = await fetch('/api/meters');
+            const metersData = await response.json();
             
-            const option2 = option1.cloneNode(true);
-            eventMeterSelect.appendChild(option2);
+            meters = metersData;
 
-            const option3 = option1.cloneNode(true);
-            alertMeterSelect.appendChild(option3);
-        });
-        
-        // Select the first meter by default
-        if (meters.length > 0) {
-            chartMeterSelect.value = meters[0].MeterID;
+            // Populate dropdowns
+            meters.forEach(meter => {
+                const option1 = document.createElement('option');
+                option1.value = meter.MeterID;
+                option1.textContent = `${meter.MeterID} - ${meter.Location}`;
+                chartMeterSelect.appendChild(option1);
+                
+                const option2 = option1.cloneNode(true);
+                eventMeterSelect.appendChild(option2);
+
+                const option3 = option1.cloneNode(true);
+                alertMeterSelect.appendChild(option3);
+            });
+            
+            // Select the first meter by default
+            if (meters.length > 0) {
+                chartMeterSelect.value = meters[0].MeterID;
+            }
+
+            // Initial data loads
+            await updateAllMeterCards(); 
+            fetchAndRenderKWHBarChart();
+            updateHistoricalCharts();
+            fetchAndRenderEvents();
+            renderActiveAlerts();
+            renderTriggeredAlerts();
+        } catch (error) {
+            console.error('Failed to fetch initial data:', error);
+            // Handle display of error to user if necessary
         }
-
-        // Initial data loads
-        await updateAllMeterCards(); 
-        fetchAndRenderKWHBarChart();
-        updateHistoricalCharts();
-        fetchAndRenderEvents();
-        renderActiveAlerts();
-        renderTriggeredAlerts();
     }
     
     /**
