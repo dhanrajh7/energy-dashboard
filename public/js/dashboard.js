@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // In-memory state
     let meters = [];
     let alertRules = [];
-    const triggeredAlertsState = new Map();
+    const triggeredAlertsState = new Map(); // Tracks the state of active alerts to prevent duplicates
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
