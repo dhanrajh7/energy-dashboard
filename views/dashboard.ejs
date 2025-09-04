@@ -166,9 +166,6 @@
             margin-bottom: 0.5rem;
             padding: 1rem;
             border-radius: 0.5rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -241,13 +238,13 @@
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card p-3">
+                        <div class="card p-3 chart-container">
                             <h5 class="card-title">Power Factor vs. Time</h5>
                             <canvas id="powerFactorLineChart"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card p-3">
+                        <div class="card p-3 chart-container">
                             <h5 class="card-title">Current vs. Time</h5>
                             <canvas id="currentLineChart"></canvas>
                         </div>
