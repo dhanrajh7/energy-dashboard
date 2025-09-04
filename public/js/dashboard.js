@@ -21,8 +21,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // In-memory state
     let meters = [];
-    let alertRules = [];
-    const triggeredAlertsState = new Map(); // Tracks the state of active alerts to prevent duplicates
+    let activeAlerts = JSON.parse(localStorage.getItem('activeAlerts')) || [];
+    let triggeredAlerts = JSON.parse(sessionStorage.getItem('triggeredAlerts')) || [];
+    let editingAlertIndex = -1;
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -44,42 +45,37 @@ document.addEventListener('DOMContentLoaded', () => {
      * Fetches all meters and populates the dropdowns.
      */
     async function fetchMeters() {
-        try {
-            const response = await fetch('/api/meters');
-            const metersData = await response.json();
+        const response = await fetch('/api/meters');
+        const metersData = await response.json();
+        
+        meters = metersData;
+
+        // Populate dropdowns
+        meters.forEach(meter => {
+            const option1 = document.createElement('option');
+            option1.value = meter.MeterID;
+            option1.textContent = `${meter.MeterID} - ${meter.Location}`;
+            chartMeterSelect.appendChild(option1);
             
-            meters = metersData;
+            const option2 = option1.cloneNode(true);
+            eventMeterSelect.appendChild(option2);
 
-            // Populate dropdowns
-            meters.forEach(meter => {
-                const option1 = document.createElement('option');
-                option1.value = meter.MeterID;
-                option1.textContent = `${meter.MeterID} - ${meter.Location}`;
-                chartMeterSelect.appendChild(option1);
-                
-                const option2 = option1.cloneNode(true);
-                eventMeterSelect.appendChild(option2);
-
-                const option3 = option1.cloneNode(true);
-                alertMeterSelect.appendChild(option3);
-            });
-            
-            // Select the first meter by default
-            if (meters.length > 0) {
-                chartMeterSelect.value = meters[0].MeterID;
-            }
-
-            // Initial data loads
-            await updateAllMeterCards(); 
-            fetchAndRenderKWHBarChart();
-            updateHistoricalCharts();
-            fetchAndRenderEvents();
-            renderActiveAlerts();
-            renderTriggeredAlerts();
-        } catch (error) {
-            console.error('Failed to fetch initial data:', error);
-            // Handle display of error to user if necessary
+            const option3 = option1.cloneNode(true);
+            alertMeterSelect.appendChild(option3);
+        });
+        
+        // Select the first meter by default
+        if (meters.length > 0) {
+            chartMeterSelect.value = meters[0].MeterID;
         }
+
+        // Initial data loads
+        await updateAllMeterCards(); 
+        fetchAndRenderKWHBarChart();
+        updateHistoricalCharts();
+        fetchAndRenderEvents();
+        renderAlerts();
+        renderTriggeredAlerts();
     }
     
     /**
@@ -87,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function updateAllMeterCards() {
         const now = moment();
-        alertRules = await fetchAlertRules();
         for (const meter of meters) {
             const liveData = await fetchLiveData(meter.MeterID);
             
@@ -99,12 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 meterCardsContainer.appendChild(cardCol);
             }
             
-            createOrUpdateMeterCard(meter, liveData, now, cardCol, alertRules);
+            createOrUpdateMeterCard(meter, liveData, now, cardCol);
         }
     }
     
     /**
      * Fetches the latest event for a single meter.
+     * @param {number} meterId
      */
     async function fetchLiveData(meterId) {
         const response = await fetch(`/api/live-data/${meterId}`);
@@ -117,8 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Creates or updates a meter card in the UI.
+     * @param {object} meter
+     * @param {object} liveData
+     * @param {moment} now
+     * @param {HTMLElement} cardCol - The existing or new card container element
      */
-    function createOrUpdateMeterCard(meter, liveData, now, cardCol, alertRules) {
+    function createOrUpdateMeterCard(meter, liveData, now, cardCol) {
         let statusLightClass = 'status-red';
         let lastUpdatedText = 'No data available';
         let cardBodyContent = `<p class="card-subtitle mb-2">${meter.Description}</p><p class="text-muted">No recent data available.</p>`;
@@ -140,7 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            checkAlerts(meter.MeterID, liveData, alertRules);
+            // Check for alerts
+            checkAlerts(meter.MeterID, liveData);
         }
         
         cardCol.innerHTML = `
@@ -162,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
     
+    // Auto-refresh meter cards every 5 seconds
     setInterval(updateAllMeterCards, 5000);
 
     // --------------------------------------------------------------------------------------------------------------------
@@ -186,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Latest Total KWH',
                     data: kwhData,
-                    backgroundColor: 'rgba(97, 175, 239, 0.8)',
+                    backgroundColor: 'rgba(97, 175, 239, 0.8)', // Updated to blue
                     borderColor: '#61afef',
                     borderWidth: 1
                 }]
@@ -288,6 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Event listener for chart update button
     document.getElementById('updateChartsBtn').addEventListener('click', updateHistoricalCharts);
     chartMeterSelect.addEventListener('change', updateHistoricalCharts);
 
@@ -295,6 +298,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Table
     // --------------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Fetches and renders events in the table.
+     */
     async function fetchAndRenderEvents() {
         const meterId = document.getElementById('eventMeterSelect').value;
         const startDate = document.getElementById('eventStartDate').value;
@@ -321,184 +327,148 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Event listener for event table filter button
     document.getElementById('filterEventsBtn').addEventListener('click', fetchAndRenderEvents);
     
     // --------------------------------------------------------------------------------------------------------------------
     // Alert System
     // --------------------------------------------------------------------------------------------------------------------
-    
-    async function fetchAlertRules() {
-        const response = await fetch('/api/alerts/rules');
-        return await response.json();
-    }
 
-    async function fetchTriggeredAlerts() {
-        const response = await fetch('/api/alerts/triggered');
-        return await response.json();
-    }
-
-    async function renderActiveAlerts() {
-        const alerts = await fetchAlertRules();
-        alertRules = alerts;
+    /**
+     * Renders the list of active alerts.
+     */
+    function renderAlerts() {
         activeAlertsList.innerHTML = '';
-        alertRules.forEach((alert) => {
+        activeAlerts.forEach((alert, index) => {
             const listItem = document.createElement('li');
             listItem.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent';
             listItem.innerHTML = `
                 <div>
-                    <strong>Meter ${alert.MeterID}:</strong> ${alert.Parameter} > ${alert.Threshold}
-                    <span class="ms-3 d-inline-block">${alert.Message}</span>
+                    <strong>Meter ${alert.meterId}</strong>: ${alert.param} > ${alert.threshold}
+                    <p class="text-muted mb-0 d-inline-block ms-3">${alert.message}</p>
                 </div>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-sm btn-info edit-alert-btn" data-id="${alert.AlertID}"><i class="bi bi-pencil"></i></button>
-                    <button type="button" class="btn btn-sm btn-danger remove-alert-btn" data-id="${alert.AlertID}"><i class="bi bi-x-lg"></i></button>
+                    <button type="button" class="btn btn-sm btn-info edit-alert-btn" data-index="${index}"><i class="bi bi-pencil"></i></button>
+                    <button type="button" class="btn btn-sm btn-danger remove-alert-btn" data-index="${index}"><i class="bi bi-x-lg"></i></button>
                 </div>
             `;
             activeAlertsList.appendChild(listItem);
         });
     }
 
-    async function renderTriggeredAlerts() {
-        const alerts = await fetchTriggeredAlerts();
+    function renderTriggeredAlerts() {
         triggeredAlertsList.innerHTML = '';
-        alerts.forEach(alert => {
+        triggeredAlerts.forEach(alert => {
             const listItem = document.createElement('li');
             listItem.className = 'list-group-item d-flex justify-content-between align-items-center alert-item';
             listItem.innerHTML = `
                 <div>
-                    <strong>[${moment.utc(alert.StartTime).local().format('HH:mm:ss')}] Alert on Meter ${alert.MeterID}:</strong>
-                    <span class="ms-2">${alert.Message}</span>
+                    <strong>[${moment.utc(alert.timestamp).local().format('HH:mm:ss')}] Alert on Meter ${alert.meterId}:</strong>
+                    <span class="ms-2">${alert.message}</span>
                 </div>
             `;
             triggeredAlertsList.appendChild(listItem);
         });
 
-        if (alerts.length > 0) {
-            alertCountBadge.textContent = alerts.length;
+        // Update notification badge
+        if (triggeredAlerts.length > 0) {
+            alertCountBadge.textContent = triggeredAlerts.length;
             alertCountBadge.classList.remove('d-none');
         } else {
             alertCountBadge.classList.add('d-none');
         }
     }
     
-    document.getElementById('alertForm').addEventListener('submit', async (e) => {
+    // Handle alert form submission
+    document.getElementById('alertForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const meterId = document.getElementById('alertMeterSelect').value;
         const param = document.getElementById('alertParamSelect').value;
         const threshold = parseFloat(document.getElementById('alertThreshold').value);
         const message = document.getElementById('alertMessage').value;
-        const alertId = document.getElementById('alertIndex').value;
+        const alertIndex = parseInt(document.getElementById('alertIndex').value);
         
-        try {
-            const response = await fetch('/api/alerts/rules', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ MeterID: meterId, Parameter: param, Threshold: threshold, Message: message })
-            });
-
-            if (response.ok) {
-                document.getElementById('alertForm').reset();
-                renderActiveAlerts();
-            } else {
-                console.error('Failed to add alert rule.');
-            }
-        } catch (error) {
-            console.error('An error occurred:', error);
+        if (alertIndex !== -1) {
+            // Update existing alert
+            activeAlerts[alertIndex] = { meterId, param, threshold, message };
+            document.getElementById('alertIndex').value = -1;
+            document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Save Alert';
+        } else {
+            // Add new alert
+            activeAlerts.push({ meterId, param, threshold, message });
         }
+        
+        localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
+        
+        renderAlerts();
+        e.target.reset();
     });
 
-    activeAlertsList.addEventListener('click', async (e) => {
+    // Handle deleting or editing alerts (using event delegation on parent)
+    activeAlertsList.addEventListener('click', (e) => {
         const targetBtn = e.target.closest('.remove-alert-btn');
         if (targetBtn) {
-            const alertId = targetBtn.getAttribute('data-id');
-            try {
-                const response = await fetch(`/api/alerts/rules/${alertId}`, { method: 'DELETE' });
-                if (response.ok) {
-                    renderActiveAlerts();
-                } else {
-                    console.error('Failed to delete alert rule.');
-                }
-            } catch (error) {
-                console.error('An error occurred:', error);
-            }
+            const index = targetBtn.getAttribute('data-index');
+            activeAlerts.splice(index, 1);
+            localStorage.setItem('activeAlerts', JSON.stringify(activeAlerts));
+            renderAlerts();
             return;
         }
 
         const editBtn = e.target.closest('.edit-alert-btn');
         if (editBtn) {
-            const alertId = editBtn.getAttribute('data-id');
-            const alertToEdit = alertRules.find(alert => alert.AlertID == alertId);
-            if (alertToEdit) {
-                document.getElementById('alertIndex').value = alertToEdit.AlertID;
-                document.getElementById('alertMeterSelect').value = alertToEdit.MeterID;
-                document.getElementById('alertParamSelect').value = alertToEdit.Parameter;
-                document.getElementById('alertThreshold').value = alertToEdit.Threshold;
-                document.getElementById('alertMessage').value = alertToEdit.Message;
-                document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Update Alert';
-                document.getElementById('alerts-setup-tab').click();
-            }
+            const index = editBtn.getAttribute('data-index');
+            const alertToEdit = activeAlerts[index];
+            
+            document.getElementById('alertIndex').value = index;
+            document.getElementById('alertMeterSelect').value = alertToEdit.meterId;
+            document.getElementById('alertParamSelect').value = alertToEdit.param;
+            document.getElementById('alertThreshold').value = alertToEdit.threshold;
+            document.getElementById('alertMessage').value = alertToEdit.message;
+            
+            document.getElementById('alertForm').querySelector('button[type="submit"]').innerText = 'Update Alert';
+            document.getElementById('alerts-setup-tab').click();
         }
     });
     
-    clearAlertsBtn.addEventListener('click', async () => {
-        try {
-            const response = await fetch('/api/alerts/triggered', { method: 'DELETE' });
-            if (response.ok) {
-                renderTriggeredAlerts();
-            }
-        } catch (error) {
-            console.error('An error occurred:', error);
-        }
+    clearAlertsBtn.addEventListener('click', () => {
+        triggeredAlerts = [];
+        sessionStorage.setItem('triggeredAlerts', JSON.stringify(triggeredAlerts));
+        renderTriggeredAlerts();
     });
 
-    const triggeredAlertsState = new Map();
-
-    async function checkAlerts(meterId, liveData, alertRules) {
-        alertRules.forEach(async alert => {
-            if (alert.MeterID == meterId) {
-                const value = liveData[alert.Parameter];
-                const alertKey = `${alert.AlertID}-${alert.MeterID}`;
-                
-                const conditionMet = value !== null && value > alert.Threshold;
-
-                if (conditionMet) {
-                    if (!triggeredAlertsState.has(alertKey)) {
-                        triggeredAlertsState.set(alertKey, true);
-                        try {
-                            const response = await fetch('/api/alerts/triggered', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    AlertID: alert.AlertID,
-                                    MeterID: meterId,
-                                    Message: alert.Message
-                                })
-                            });
-                            if (response.ok) {
-                                renderTriggeredAlerts();
-                                showToastAlert(alert.Message);
-                            }
-                        } catch (error) {
-                            console.error('Failed to trigger alert via API:', error);
-                        }
-                    }
-                } else {
-                    if (triggeredAlertsState.has(alertKey)) {
-                        try {
-                            const response = await fetch(`/api/alerts/triggered/recover/${alert.AlertID}`, { method: 'PUT' });
-                            if (response.ok) {
-                                triggeredAlertsState.delete(alertKey);
-                                renderTriggeredAlerts();
-                            }
-                        } catch (error) {
-                            console.error('Failed to recover alert via API:', error);
-                        }
+    /**
+     * Checks if any live data exceeds the set alert thresholds.
+     */
+    function checkAlerts(meterId, liveData) {
+        activeAlerts.forEach(alert => {
+            if (alert.meterId == meterId) {
+                const value = liveData[alert.param];
+                if (value !== null && value > alert.threshold) {
+                    const isNewAlert = !triggeredAlerts.some(a => 
+                        a.meterId === alert.meterId && 
+                        a.message === alert.message
+                    );
+                    
+                    if (isNewAlert) {
+                        const newAlert = {
+                            timestamp: liveData.Timestamp,
+                            meterId: alert.meterId,
+                            message: alert.message
+                        };
+                        triggeredAlerts.push(newAlert);
+                        sessionStorage.setItem('triggeredAlerts', JSON.stringify(triggeredAlerts));
+                        renderTriggeredAlerts();
+                        showToastAlert(alert.message);
                     }
                 }
             }
         });
     }
 
+    /**
+     * Shows a Bootstrap toast alert with a message.
+     */
     function showToastAlert(message) {
         const toastHtml = `
             <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -518,6 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.show();
     }
     
+    // Add event listeners for chart modals
     document.getElementById('powerFactorLineChart').parentElement.addEventListener('click', () => {
         if (pfModalChart) pfModalChart.destroy();
         pfModalChart = new Chart(powerFactorModalChartCanvas, pfChart.config);
@@ -532,5 +503,6 @@ document.addEventListener('DOMContentLoaded', () => {
         currentModal.show();
     });
 
+    // Initial fetch of meters to start the dashboard
     fetchMeters();
 });
