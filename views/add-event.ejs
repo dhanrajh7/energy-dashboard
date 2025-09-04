@@ -9,67 +9,117 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <style>
         :root {
-            --primary-bg: #10151a;
-            --secondary-bg: #1c212a;
-            --card-bg: #21262d;
-            --text-color: #e0e6f1;
-            --secondary-text: #a0acbd;
-            --primary-color: #61afef;
-            --border-color: #3e4451;
+            --primary-bg: #0d1117;
+            --secondary-bg: #161b22;
+            --card-bg: #161b22;
+            --text-color: #c9d1d9;
+            --secondary-text: #8b949e;
+            --primary-color: #58a6ff;
+            --border-color: #30363d;
         }
         body {
             background-color: var(--primary-bg);
             color: var(--text-color);
             font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
         }
-        .container {
-            max-width: 800px;
+        .app-container {
+            max-width: 900px;
+            width: 100%;
         }
         .card {
-            background-color: var(--secondary-bg);
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .form-control, .form-select {
-            background-color: var(--card-bg);
+            background-color: #0d1117;
             border: 1px solid var(--border-color);
             color: var(--text-color);
+            border-radius: 0.5rem;
+            transition: all 0.2s;
         }
         .form-control:focus, .form-select:focus {
-            background-color: var(--card-bg);
+            background-color: #0d1117;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.25rem rgba(97, 175, 239, 0.25);
+            box-shadow: 0 0 0 0.25rem rgba(88, 166, 255, 0.25);
             color: var(--text-color);
         }
         .form-label {
             color: var(--secondary-text);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
         }
         .btn-primary {
             background-color: var(--primary-color);
             border-color: var(--primary-color);
             color: var(--primary-bg);
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
         }
         .btn-primary:hover {
-            background-color: #4da5e6;
-            border-color: #4da5e6;
+            background-color: #6fb0ff;
+            border-color: #6fb0ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(88, 166, 255, 0.2);
+        }
+        .btn-success {
+            background-color: #2ea043;
+            border-color: #2ea043;
+            color: var(--text-color);
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .btn-success:hover {
+            background-color: #34c24e;
+            border-color: #34c24e;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(46, 160, 67, 0.2);
+        }
+        .btn-secondary {
+            background-color: #21262d;
+            border-color: var(--border-color);
+            color: var(--secondary-text);
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover {
+            background-color: #30363d;
+            border-color: #444c56;
+        }
+        .title {
+            color: var(--primary-color);
+        }
+        .alert {
+            font-weight: 500;
+            border-radius: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <a href="/" class="btn btn-secondary"><i class="bi bi-arrow-left me-2"></i>Back to Dashboard</a>
-            <h1 class="text-center text-primary mb-0">Add New Event Data</h1>
+    <div class="app-container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4">
+            <a href="/" class="btn btn-secondary mb-2 mb-md-0"><i class="bi bi-arrow-left me-2"></i>Back to Dashboard</a>
+            <h1 class="text-center title mb-2 mb-md-0">Add New Event Data</h1>
             <button id="updateAllMetersBtn" class="btn btn-primary"><i class="bi bi-clock-history me-2"></i>Update All Meters</button>
         </div>
         <div id="updateStatusMessage" class="mt-3 text-center"></div>
 
         <div class="row g-4 mb-4">
             <div class="col-md-6">
-                <div class="card p-3 h-100">
-                    <h5 class="card-title text-center">Add Single Event Manually</h5>
+                <div class="card p-4 h-100">
+                    <h5 class="card-title text-center text-light mb-4">Add Single Event Manually</h5>
                     <form id="addEventForm" class="mt-3">
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -145,8 +195,8 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card p-3 h-100">
-                    <h5 class="card-title text-center">Update from Excel</h5>
+                <div class="card p-4 h-100">
+                    <h5 class="card-title text-center text-light mb-4">Update from Excel</h5>
                     <div class="d-flex justify-content-center my-3">
                         <button id="downloadTemplateBtn" class="btn btn-success me-2"><i class="bi bi-download me-2"></i>Download Template</button>
                     </div>

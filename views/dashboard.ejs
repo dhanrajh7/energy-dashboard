@@ -39,7 +39,7 @@
             padding: 20px 0;
         }
         .header-logo {
-            height: 50px; /* Maximized logo height */
+            height: 100px; /* Maximized logo height */
             margin-right: 15px; /* Add some spacing */
             margin-left: 100px;
         }
@@ -171,13 +171,11 @@
 </head>
 <body>
 
-    <div class="container-fluid">
-        <div class="header-top">
-            <img src="/images/logo.png" alt="Company Logo" class="header-logo">
-            <h1 class="header-title">⚡ Energy Monitoring Dashboard</h1>
-            <div style="width: 50px;"></div>
-        </div>
-
+<div class="container-fluid">
+    <div class="header-top d-flex align-items-center justify-content-start">
+        <img src="/images/logo.png" alt="Company Logo" class="header-logo me-4">
+        <h1 class="header-title" style="margin-left: -250px;">⚡ Energy Monitoring Dashboard</h1>
+    </div>
         <ul class="nav nav-tabs justify-content-center" id="myTab" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="meters-tab" data-bs-toggle="tab" data-bs-target="#meters" type="button" role="tab"><i class="bi bi-speedometer2 me-2"></i>Meter View</button>
