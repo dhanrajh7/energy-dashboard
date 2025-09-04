@@ -39,7 +39,7 @@
             padding: 20px 0;
         }
         .header-logo {
-            height: 100px; /* Maximized logo height */
+            height: 50px; /* Maximized logo height */
             margin-right: 15px; /* Add some spacing */
             margin-left: 100px;
         }
@@ -166,6 +166,9 @@
             margin-bottom: 0.5rem;
             padding: 1rem;
             border-radius: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -238,13 +241,13 @@
 
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <div class="card p-3 chart-container">
+                        <div class="card p-3">
                             <h5 class="card-title">Power Factor vs. Time</h5>
                             <canvas id="powerFactorLineChart"></canvas>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="card p-3 chart-container">
+                        <div class="card p-3">
                             <h5 class="card-title">Current vs. Time</h5>
                             <canvas id="currentLineChart"></canvas>
                         </div>
