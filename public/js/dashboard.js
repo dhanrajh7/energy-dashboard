@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // In-memory state
     let meters = [];
+    let alertRules = []; // Storing rules from DB
+    let activeTriggeredAlerts = new Map(); // Use a Map to track currently triggered alerts
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -80,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function updateAllMeterCards() {
         const now = moment();
-        const activeAlerts = await fetchAlertRules(); // Fetch rules before checking
+        alertRules = await fetchAlertRules(); // Fetch rules before checking
         for (const meter of meters) {
             const liveData = await fetchLiveData(meter.MeterID);
             
@@ -92,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 meterCardsContainer.appendChild(cardCol);
             }
             
-            createOrUpdateMeterCard(meter, liveData, now, cardCol, activeAlerts);
+            createOrUpdateMeterCard(meter, liveData, now, cardCol, alertRules);
         }
     }
     
@@ -115,9 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} liveData
      * @param {moment} now
      * @param {HTMLElement} cardCol - The existing or new card container element
-     * @param {array} activeAlerts - Array of active alert rules
+     * @param {array} alertRules - Array of active alert rules
      */
-    function createOrUpdateMeterCard(meter, liveData, now, cardCol, activeAlerts) {
+    function createOrUpdateMeterCard(meter, liveData, now, cardCol, alertRules) {
         let statusLightClass = 'status-red';
         let lastUpdatedText = 'No data available';
         let cardBodyContent = `<p class="card-subtitle mb-2">${meter.Description}</p><p class="text-muted">No recent data available.</p>`;
@@ -139,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            checkAlerts(meter.MeterID, liveData, activeAlerts);
+            checkAlerts(meter.MeterID, liveData, alertRules);
         }
         
         cardCol.innerHTML = `
@@ -185,8 +187,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Latest Total KWH',
                     data: kwhData,
-                    backgroundColor: 'rgba(169, 177, 189, 0.8)',
-                    borderColor: '#A9B1BD',
+                    backgroundColor: 'rgba(97, 175, 239, 0.8)', // Updated to blue
+                    borderColor: '#61afef',
                     borderWidth: 1
                 }]
             },
@@ -325,14 +327,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --------------------------------------------------------------------------------------------------------------------
     // Alert System
     // --------------------------------------------------------------------------------------------------------------------
-
-    // Fetch alert rules from the server
+    
     async function fetchAlertRules() {
         const response = await fetch('/api/alerts/rules');
         return await response.json();
     }
 
-    // Fetch triggered alerts from the server
     async function fetchTriggeredAlerts() {
         const response = await fetch('/api/alerts/triggered');
         return await response.json();
@@ -340,9 +340,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function renderActiveAlerts() {
         const alerts = await fetchAlertRules();
-        activeAlerts = alerts; // Update local state
+        alertRules = alerts;
         activeAlertsList.innerHTML = '';
-        activeAlerts.forEach((alert, index) => {
+        alertRules.forEach((alert, index) => {
             const listItem = document.createElement('li');
             listItem.className = 'list-group-item d-flex justify-content-between align-items-center bg-transparent';
             listItem.innerHTML = `
@@ -374,7 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
             triggeredAlertsList.appendChild(listItem);
         });
 
-        // Update notification badge
         if (alerts.length > 0) {
             alertCountBadge.textContent = alerts.length;
             alertCountBadge.classList.remove('d-none');
@@ -383,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // Handle alert form submission (Create new rule)
     document.getElementById('alertForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const meterId = document.getElementById('alertMeterSelect').value;
@@ -400,7 +398,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                // Clear form and re-render alerts
                 document.getElementById('alertForm').reset();
                 renderActiveAlerts();
             } else {
@@ -411,7 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Handle deleting or editing alerts
     activeAlertsList.addEventListener('click', async (e) => {
         const targetBtn = e.target.closest('.remove-alert-btn');
         if (targetBtn) {
@@ -419,7 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`/api/alerts/rules/${alertId}`, { method: 'DELETE' });
                 if (response.ok) {
-                    renderActiveAlerts(); // Re-render rules
+                    renderActiveAlerts();
                 } else {
                     console.error('Failed to delete alert rule.');
                 }
@@ -432,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const editBtn = e.target.closest('.edit-alert-btn');
         if (editBtn) {
             const alertId = editBtn.getAttribute('data-id');
-            const alertToEdit = activeAlerts.find(alert => alert.AlertID == alertId);
+            const alertToEdit = alertRules.find(alert => alert.AlertID == alertId);
             if (alertToEdit) {
                 document.getElementById('alertIndex').value = alertToEdit.AlertID;
                 document.getElementById('alertMeterSelect').value = alertToEdit.MeterID;
@@ -445,7 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Clear all triggered alerts from the database
     clearAlertsBtn.addEventListener('click', async () => {
         try {
             const response = await fetch('/api/alerts/triggered', { method: 'DELETE' });
@@ -457,40 +452,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    /**
-     * Checks if any live data exceeds the set alert thresholds.
-     */
-    async function checkAlerts(meterId, liveData, activeAlerts) {
-        activeAlerts.forEach(async alert => {
+    // Tracking the state of triggered alerts to prevent duplicates
+    const triggeredAlertsState = new Map();
+
+    async function checkAlerts(meterId, liveData, alertRules) {
+        alertRules.forEach(async alert => {
             if (alert.MeterID == meterId) {
                 const value = liveData[alert.Parameter];
-                if (value !== null && value > alert.Threshold) {
-                    // Trigger new alert via API
-                    try {
-                        const response = await fetch('/api/alerts/triggered', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                AlertID: alert.AlertID,
-                                MeterID: meterId,
-                                Message: alert.Message
-                            })
-                        });
-                        if (response.ok) {
-                            renderTriggeredAlerts();
-                            showToastAlert(alert.Message);
+                const alertKey = `${alert.AlertID}-${alert.MeterID}`;
+
+                // Check if the condition is met
+                const conditionMet = value !== null && value > alert.Threshold;
+
+                if (conditionMet) {
+                    // Check if this alert has already been triggered
+                    if (!triggeredAlertsState.has(alertKey)) {
+                        triggeredAlertsState.set(alertKey, true); // Set state to triggered
+                        try {
+                            const response = await fetch('/api/alerts/triggered', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    AlertID: alert.AlertID,
+                                    MeterID: meterId,
+                                    Message: alert.Message
+                                })
+                            });
+                            if (response.ok) {
+                                renderTriggeredAlerts();
+                                showToastAlert(alert.Message);
+                            }
+                        } catch (error) {
+                            console.error('Failed to trigger alert via API:', error);
                         }
-                    } catch (error) {
-                        console.error('Failed to trigger alert via API:', error);
+                    }
+                } else {
+                    // Condition is no longer met, clear the state
+                    if (triggeredAlertsState.has(alertKey)) {
+                        triggeredAlertsState.delete(alertKey);
                     }
                 }
             }
         });
     }
 
-    /**
-     * Shows a Bootstrap toast alert with a message.
-     */
     function showToastAlert(message) {
         const toastHtml = `
             <div class="toast align-items-center text-bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -510,7 +515,6 @@ document.addEventListener('DOMContentLoaded', () => {
         toast.show();
     }
     
-    // Add event listeners for chart modals
     document.getElementById('powerFactorLineChart').parentElement.addEventListener('click', () => {
         if (pfModalChart) pfModalChart.destroy();
         pfModalChart = new Chart(powerFactorModalChartCanvas, pfChart.config);
