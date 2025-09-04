@@ -21,8 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // In-memory state
     let meters = [];
-    let alertRules = [];
-    const triggeredAlertsState = new Map(); // Tracks the state of active alerts to prevent duplicates
+    let alertRules = []; // Storing rules from DB
+    let activeTriggeredAlerts = new Map(); // Use a Map to track currently triggered alerts
     
     // Default date range (last 24 hours)
     const defaultEndDate = moment();
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     async function updateAllMeterCards() {
         const now = moment();
-        alertRules = await fetchAlertRules();
+        alertRules = await fetchAlertRules(); // Fetch rules before checking
         for (const meter of meters) {
             const liveData = await fetchLiveData(meter.MeterID);
             
@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     /**
      * Fetches the latest event for a single meter.
+     * @param {number} meterId
      */
     async function fetchLiveData(meterId) {
         const response = await fetch(`/api/live-data/${meterId}`);
@@ -112,6 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Creates or updates a meter card in the UI.
+     * @param {object} meter
+     * @param {object} liveData
+     * @param {moment} now
+     * @param {HTMLElement} cardCol - The existing or new card container element
+     * @param {array} alertRules - Array of active alert rules
      */
     function createOrUpdateMeterCard(meter, liveData, now, cardCol, alertRules) {
         let statusLightClass = 'status-red';
@@ -181,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 datasets: [{
                     label: 'Latest Total KWH',
                     data: kwhData,
-                    backgroundColor: 'rgba(97, 175, 239, 0.8)',
+                    backgroundColor: 'rgba(97, 175, 239, 0.8)', // Updated to blue
                     borderColor: '#61afef',
                     borderWidth: 1
                 }]
@@ -446,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Tracking the state of triggered alerts to prevent duplicates
     const triggeredAlertsState = new Map();
 
     async function checkAlerts(meterId, liveData, alertRules) {
@@ -453,12 +460,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (alert.MeterID == meterId) {
                 const value = liveData[alert.Parameter];
                 const alertKey = `${alert.AlertID}-${alert.MeterID}`;
-                
+
+                // Check if the condition is met
                 const conditionMet = value !== null && value > alert.Threshold;
 
                 if (conditionMet) {
+                    // Check if this alert has already been triggered
                     if (!triggeredAlertsState.has(alertKey)) {
-                        triggeredAlertsState.set(alertKey, true);
+                        triggeredAlertsState.set(alertKey, true); // Set state to triggered
                         try {
                             const response = await fetch('/api/alerts/triggered', {
                                 method: 'POST',
@@ -478,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                 } else {
+                    // Condition is no longer met, clear the state
                     if (triggeredAlertsState.has(alertKey)) {
                         triggeredAlertsState.delete(alertKey);
                     }
