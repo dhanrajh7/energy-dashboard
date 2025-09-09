@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Energy Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #10151a; /* Very dark blue */
+            --secondary-bg: #1d232c; /* Main content area, slightly lighter */
+            --card-bg: #28303d; /* Card background, distinct from secondary */
+            --text-color: #e0e6f1; /* Off-white text */
+            --secondary-text: #a0acbd; /* Soft gray for labels */
+            --primary-color: #A9B1BD; /* Light gray for highlights */
+            --border-color: #3e4451;
+            --highlight-color: #A9B1BD; /* Updated to gray */
+            --header-bg: #1a2027; /* Distinct header background */
+        }
+        body {
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 2rem; /* Adds space between the header and the login box */
+        }
+        .header-top {
+            display: flex;
+            flex-direction: column; /* Stacks children vertically */
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+        .header-logo {
+            height: 60px; /* Adjusted logo size */
+            margin-bottom: 15px; /* Adds a small gap between logo and title */
+        }
+        .header-title {
+            font-size: 2.5rem; /* Adjusted font size */
+            font-weight: 600;
+            color: var(--primary-color);
+            text-align: center;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 30px;
+            background-color: var(--secondary-bg);
+            border-radius: 1rem;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
+        }
+        .login-container h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--primary-color);
+        }
+        .form-control {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+        .form-control:focus {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            box-shadow: 0 0 0 0.25rem rgba(169, 177, 189, 0.25);
+            border-color: var(--primary-color);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: var(--primary-bg);
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background-color: #8f96a3;
+            border-color: #8f96a3;
+        }
+        .register-link {
+            text-align: center;
+            margin-top: 1rem;
+            color: var(--secondary-text);
+        }
+        .register-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header-top">
+        <img src="/images/logo1.png" alt="Company Logo" class="header-logo">
+        <h1 class="header-title">⚡ Energy Monitoring Dashboard</h1>
+    </div>
+    <div class="login-container">
+        <h2 class="mb-4">Login</h2>
+        <% if (error) { %>
+            <div class="alert alert-danger" role="alert">
+                <%= error %>
+            </div>
+        <% } %>
+        <form action="/login" method="POST">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary">Login</button>
+            </div>
+        </form>
+        <div class="register-link">
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

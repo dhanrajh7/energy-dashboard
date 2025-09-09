@@ -1,10 +1,12 @@
-// server.js
 const express = require('express');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const moment = require('moment');
 const multer = require('multer');
 const xlsx = require('xlsx');
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const SQLiteStore = require('connect-sqlite3')(session);
 
 // ⚙️ Configuration
 const PORT = process.env.PORT || 3006;
@@ -26,15 +28,83 @@ app.use(express.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Main route to render the dashboard
-app.get('/', (req, res) => {
+// --- Session Middleware for Authentication ---
+app.use(session({
+    store: new SQLiteStore({
+        db: 'sessions.db',
+        dir: './'
+    }),
+    secret: 'a_very_secret_key_that_should_be_long_and_random',
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
+}));
+
+// --- Middleware to protect routes ---
+const requireLogin = (req, res, next) => {
+    if (req.session.isLoggedIn) {
+        next();
+    } else {
+        res.redirect('/login');
+    }
+};
+
+/* ======================== AUTHENTICATION ROUTES ======================== */
+
+// Route to render the login page
+app.get('/login', (req, res) => {
+    res.render('login', { error: null });
+});
+
+// Handle login form submission
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+    db.get('SELECT * FROM Users WHERE Username = ?', [username], (err, user) => {
+        if (err) {
+            return res.render('login', { error: 'An error occurred. Please try again.' });
+        }
+        if (!user) {
+            return res.render('login', { error: 'Invalid username or password.' });
+        }
+        // Compare the submitted password with the hashed password in the database
+        bcrypt.compare(password, user.Password, (bcryptErr, result) => {
+            if (result) {
+                req.session.isLoggedIn = true;
+                req.session.user = { id: user.UserID, username: user.Username, role: user.Role };
+                res.redirect('/');
+            } else {
+                res.render('login', { error: 'Invalid username or password.' });
+            }
+        });
+    });
+});
+
+// Logout route
+app.get('/logout', (req, res) => {
+    req.session.destroy(err => {
+        if (err) {
+            console.error('Error destroying session:', err);
+            return res.redirect('/');
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/login');
+    });
+});
+
+/* ======================== PROTECTED ROUTES ======================== */
+
+// Main route to render the dashboard, now protected
+app.get('/', requireLogin, (req, res) => {
     res.render('dashboard');
 });
 
-// New route to render the data entry page (optional)
-app.get('/add-event', (req, res) => {
+// New route to render the data entry page, now protected
+app.get('/add-event', requireLogin, (req, res) => {
     res.render('add-event');
 });
+
+// Protect all API routes
+app.use('/api', requireLogin);
 
 /* ======================== ALERT HELPERS ======================== */
 
@@ -92,10 +162,19 @@ const evaluateRule = (alertId, cb) => {
 /** Periodically check all active rules for new triggers or recoveries */
 const pollAlerts = () => {
     db.all(`SELECT AlertID FROM AlertRules WHERE IsActive = 1`, [], (err, rows) => {
-        if (err) return console.error('Error polling alerts:', err.message);
+        if (err) {
+            // Suppress the "database is locked" error, as it's a common concurrency issue
+            if (err.code !== 'SQLITE_BUSY') {
+                console.error('Error polling alerts:', err.message);
+            }
+            return;
+        }
         rows.forEach(row => {
             evaluateRule(row.AlertID, (e) => {
-                if (e) console.error(`Error evaluating rule ${row.AlertID}:`, e.message);
+                // Suppress the "database is locked" error
+                if (e && e.code !== 'SQLITE_BUSY') {
+                    console.error(`Error evaluating rule ${row.AlertID}:`, e.message);
+                }
             });
         });
     });
@@ -477,7 +556,6 @@ app.post('/api/events/upload', upload.single('excelFile'), (req, res) => {
         res.status(500).json({ error: 'Failed to process Excel file.' });
     }
 });
-
 
 
 app.listen(PORT, () => {
