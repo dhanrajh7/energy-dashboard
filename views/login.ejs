@@ -29,32 +29,62 @@
             align-items: center;
             min-height: 100vh;
             flex-direction: column;
-            gap: 2rem; /* Adds space between the header and the login box */
+            gap: 2rem;
+            /* Update the URL below with the path to your image */
+            background-image: url('/images/background.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
         }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(16, 21, 26, 0.7);
+            backdrop-filter: blur(0px); /* Background blur removed */
+        }
+        
+        .header-top, .login-container {
+            position: relative;
+            z-index: 1;
+        }
+
         .header-top {
             display: flex;
-            flex-direction: column; /* Stacks children vertically */
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             width: 100%;
         }
         .header-logo {
-            height: 60px; /* Adjusted logo size */
-            margin-bottom: 15px; /* Adds a small gap between logo and title */
+            height: 90px;
+            margin-bottom: 5px;
         }
         .header-title {
-            font-size: 2.5rem; /* Adjusted font size */
+            font-size: 2.5rem;
             font-weight: 600;
             color: var(--primary-color);
             text-align: center;
+            text-shadow: 2px 2px 4px #000000; /* Added text shadow for an outline effect */
         }
         .login-container {
             width: 100%;
             max-width: 400px;
             padding: 30px;
-            background-color: var(--secondary-bg);
+            background-color: rgba(40, 48, 61, 0.5); /* Semi-transparent background */
+            backdrop-filter: blur(10px); /* Glass effect */
             border-radius: 1rem;
-            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(169, 177, 189, 0.3); /* Subtle border for glass effect */
+            box-shadow: 0 0 10px rgba(87, 232, 214, 0.2); /* Reduced neon glow effect */
+            transition: box-shadow 0.3s ease-in-out;
+        }
+        .login-container:hover {
+             box-shadow: 0 0 10px rgba(87, 232, 214, 0.2);
         }
         .login-container h2 {
             text-align: center;
@@ -62,12 +92,12 @@
             color: var(--primary-color);
         }
         .form-control {
-            background-color: var(--card-bg);
+            background-color: rgba(40, 48, 61, 0.7); /* Slightly more opaque for input fields */
             border: 1px solid var(--border-color);
             color: var(--text-color);
         }
         .form-control:focus {
-            background-color: var(--card-bg);
+            background-color: rgba(40, 48, 61, 0.9);
             color: var(--text-color);
             box-shadow: 0 0 0 0.25rem rgba(169, 177, 189, 0.25);
             border-color: var(--primary-color);
