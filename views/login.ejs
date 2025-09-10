@@ -10,15 +10,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-bg: #10151a; /* Very dark blue */
-            --secondary-bg: #1d232c; /* Main content area, slightly lighter */
-            --card-bg: #28303d; /* Card background, distinct from secondary */
-            --text-color: #e0e6f1; /* Off-white text */
-            --secondary-text: #a0acbd; /* Soft gray for labels */
-            --primary-color: #A9B1BD; /* Light gray for highlights */
+            --primary-bg: #10151a;
+            --secondary-bg: #1d232c;
+            --card-bg: #28303d;
+            --text-color: #e0e6f1;
+            --secondary-text: #a0acbd;
+            --primary-color: #A9B1BD;
             --border-color: #3e4451;
-            --highlight-color: #A9B1BD; /* Updated to gray */
-            --header-bg: #1a2027; /* Distinct header background */
+            --highlight-color: #A9B1BD;
+            --header-bg: #1a2027;
         }
         body {
             background-color: var(--primary-bg);
@@ -30,7 +30,6 @@
             min-height: 100vh;
             flex-direction: column;
             gap: 2rem;
-            /* Update the URL below with the path to your image */
             background-image: url('/images/background.png');
             background-size: cover;
             background-position: center;
@@ -46,7 +45,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(16, 21, 26, 0.7);
-            backdrop-filter: blur(0px); /* Background blur removed */
+            backdrop-filter: blur(0px);
         }
         
         .header-top, .login-container {
@@ -70,21 +69,21 @@
             font-weight: 600;
             color: var(--primary-color);
             text-align: center;
-            text-shadow: 2px 2px 4px #000000; /* Added text shadow for an outline effect */
+            text-shadow: 2px 2px 4px #000000;
         }
         .login-container {
-            width: 100%;
+            width: 90%; /* Changed to a percentage for better mobile sizing */
             max-width: 400px;
             padding: 30px;
-            background-color: rgba(40, 48, 61, 0.5); /* Semi-transparent background */
-            backdrop-filter: blur(10px); /* Glass effect */
+            background-color: rgba(40, 48, 61, 0.5);
+            backdrop-filter: blur(10px);
             border-radius: 1rem;
-            border: 1px solid rgba(169, 177, 189, 0.3); /* Subtle border for glass effect */
-            box-shadow: 0 0 10px rgba(87, 232, 214, 0.2); /* Reduced neon glow effect */
+            border: 1px solid rgba(169, 177, 189, 0.3);
+            box-shadow: 0 0 10px rgba(87, 232, 214, 0.2);
             transition: box-shadow 0.3s ease-in-out;
         }
         .login-container:hover {
-             box-shadow: 0 0 10px rgba(87, 232, 214, 0.2);
+            box-shadow: 0 0 10px rgba(87, 232, 214, 0.2);
         }
         .login-container h2 {
             text-align: center;
@@ -92,7 +91,7 @@
             color: var(--primary-color);
         }
         .form-control {
-            background-color: rgba(40, 48, 61, 0.7); /* Slightly more opaque for input fields */
+            background-color: rgba(40, 48, 61, 0.7);
             border: 1px solid var(--border-color);
             color: var(--text-color);
         }
@@ -123,6 +122,13 @@
         }
         .register-link a:hover {
             text-decoration: underline;
+        }
+
+        /* Responsive Styles for Mobile */
+        @media (max-width: 576px) {
+            .header-title {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>

@@ -13,15 +13,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <style>
         :root {
-            --primary-bg: #10151a; /* Very dark blue */
-            --secondary-bg: #1d232c; /* Main content area, slightly lighter */
-            --card-bg: #28303d; /* Card background, distinct from secondary */
-            --text-color: #e0e6f1; /* Off-white text */
-            --secondary-text: #a0acbd; /* Soft gray for labels */
-            --primary-color: #A9B1BD; /* Light gray for highlights */
+            --primary-bg: #10151a;
+            --secondary-bg: #1d232c;
+            --card-bg: #28303d;
+            --text-color: #e0e6f1;
+            --secondary-text: #a0acbd;
+            --primary-color: #A9B1BD;
             --border-color: #3e4451;
-            --highlight-color: #A9B1BD; /* Updated to gray */
-            --header-bg: #1a2027; /* Distinct header background */
+            --highlight-color: #A9B1BD;
+            --header-bg: #1a2027;
         }
 
         body {
@@ -30,25 +30,29 @@
             font-family: 'Poppins', sans-serif;
         }
         .container-fluid {
-            max-width: 1500px;
+            max-width: 100%;
         }
         .header-top {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 20px 0;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 20px 10px;
+            text-align: center;
         }
         .header-logo {
-            height: 100px; /* Maximized logo height */
-            margin-right: 15px; /* Add some spacing */
-            margin-left: 100px;
+            height: 60px;
+            margin: 0 auto 10px auto;
         }
         .header-title {
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 600;
             color: var(--primary-color);
             text-align: center;
             flex-grow: 1;
+        }
+        .header-logout {
+            margin-top: 10px;
         }
         .card {
             background-color: var(--card-bg);
@@ -61,7 +65,7 @@
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.15),
-                        inset 0 4px 15px rgba(169, 177, 189, 0.4); /* Glow effect with gray */
+                        inset 0 4px 15px rgba(169, 177, 189, 0.4);
             border-color: var(--primary-color);
         }
         .status-light {
@@ -76,7 +80,7 @@
         .status-red { background-color: #dc3545; }
         .tab-content {
             background-color: var(--secondary-bg);
-            padding: 2rem;
+            padding: 1rem;
             border-radius: 0 0 1rem 1rem;
             box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
         }
@@ -87,8 +91,10 @@
             border: none;
             color: var(--secondary-text);
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             transition: color 0.2s;
+            text-align: center;
+            white-space: nowrap;
         }
         .nav-tabs .nav-link.active {
             color: var(--primary-color);
@@ -167,223 +173,261 @@
             padding: 1rem;
             border-radius: 0.5rem;
         }
+
+        /* Responsive Styles for Mobile */
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 0 10px;
+            }
+            .header-top {
+                flex-direction: column;
+                align-items: center;
+            }
+            .header-logo {
+                height: 80px;
+                margin-left: 0;
+            }
+            .header-title {
+                font-size: 1.5rem;
+                margin-top: 10px;
+            }
+            .ms-auto.me-3 {
+                margin: 10px auto 0 auto !important;
+            }
+            .nav-tabs .nav-link {
+                padding: 8px 10px;
+            }
+            .tab-content {
+                padding: 1rem 0.5rem;
+            }
+            .row.g-3 > .col-md-3 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .d-flex.align-items-end {
+                align-items: center !important;
+            }
+            .btn.w-100 {
+                width: 100% !important;
+            }
+        }
+        
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
-    <div class="header-top d-flex align-items-center justify-content-start">
+    <div class="header-top">
         <img src="/images/logo.png" alt="Company Logo" class="header-logo me-4">
-        <div class="d-flex align-items-center justify-content-center flex-grow-1" style="margin-left: -150px;">
-    <h1 class="header-title">⚡ Energy Monitoring Dashboard</h1>
-</div>
-<div class="ms-auto me-3">
-    <a href="/logout" class="btn btn-outline-light">Logout</a>
-</div>
+        <h1 class="header-title">⚡ Energy Monitoring Dashboard</h1>
+        <div class="ms-auto me-3 header-logout">
+            <a href="/logout" class="btn btn-outline-light">Logout</a>
+        </div>
     </div>
-        <ul class="nav nav-tabs justify-content-center" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="meters-tab" data-bs-toggle="tab" data-bs-target="#meters" type="button" role="tab"><i class="bi bi-speedometer2 me-2"></i>Meter View</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts" type="button" role="tab"><i class="bi bi-graph-up-arrow me-2"></i>Charts</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab"><i class="bi bi-table me-2"></i>Event Data</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts" type="button" role="tab">
-                    <i class="bi bi-bell-fill me-2"></i>Alerts 
-                    <span id="alertCountBadge" class="badge rounded-pill bg-danger d-none">0</span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="alerts-setup-tab" data-bs-toggle="tab" data-bs-target="#alerts-setup" type="button" role="tab"><i class="bi bi-gear-fill me-2"></i>Alerts Setup</button>
-            </li>
-        </ul>
+    
+    <ul class="nav nav-tabs justify-content-center" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="meters-tab" data-bs-toggle="tab" data-bs-target="#meters" type="button" role="tab"><i class="bi bi-speedometer2 me-2"></i>Meter View</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="charts-tab" data-bs-toggle="tab" data-bs-target="#charts" type="button" role="tab"><i class="bi bi-graph-up-arrow me-2"></i>Charts</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab"><i class="bi bi-table me-2"></i>Event Data</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="alerts-tab" data-bs-toggle="tab" data-bs-target="#alerts" type="button" role="tab">
+                <i class="bi bi-bell-fill me-2"></i>Alerts 
+                <span id="alertCountBadge" class="badge rounded-pill bg-danger d-none">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="alerts-setup-tab" data-bs-toggle="tab" data-bs-target="#alerts-setup" type="button" role="tab"><i class="bi bi-gear-fill me-2"></i>Alerts Setup</button>
+        </li>
+    </ul>
 
-        <div class="tab-content" id="myTabContent">
-            <div class="tab-pane fade show active" id="meters" role="tabpanel" aria-labelledby="meters-tab">
-                <div class="row row-cols-1 row-cols-md-4 g-4 mt-3" id="meter-cards-container">
-                    </div>
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="meters" role="tabpanel" aria-labelledby="meters-tab">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4 mt-3" id="meter-cards-container">
             </div>
+        </div>
 
-            <div class="tab-pane fade" id="charts" role="tabpanel" aria-labelledby="charts-tab">
-                <div class="mt-4">
-                    <h2 class="mb-3">Latest Total KWH per Meter</h2>
-                    <div class="card p-3">
-                        <canvas id="kwhBarChart"></canvas>
+        <div class="tab-pane fade" id="charts" role="tabpanel" aria-labelledby="charts-tab">
+            <div class="mt-4">
+                <h2 class="mb-3">Latest Total KWH per Meter</h2>
+                <div class="card p-3">
+                    <canvas id="kwhBarChart"></canvas>
+                </div>
+            </div>
+            
+            <hr class="my-5">
+
+            <h2 class="mb-3">Historical Data Charts</h2>
+            <div class="card p-4 mb-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-3">
+                        <label for="chartMeterSelect" class="form-label">Meter</label>
+                        <select id="chartMeterSelect" class="form-select"></select>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="chartStartDate" class="form-label">Start Date</label>
+                        <input type="datetime-local" id="chartStartDate" class="form-control">
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <label for="chartEndDate" class="form-label">End Date</label>
+                        <input type="datetime-local" id="chartEndDate" class="form-control">
+                    </div>
+                    <div class="col-12 col-md-3 d-grid">
+                        <button class="btn btn-primary w-100" id="updateChartsBtn">Update Charts</button>
                     </div>
                 </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h5 class="card-title">Power Factor vs. Time</h5>
+                        <canvas id="powerFactorLineChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card p-3">
+                        <h5 class="card-title">Current vs. Time</h5>
+                        <canvas id="currentLineChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
+            <div class="mt-4">
+                <h2 class="mb-3">Event Data</h2>
+                <div class="card p-4 mb-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-3">
+                            <label for="eventMeterSelect" class="form-label">Meter</label>
+                            <select id="eventMeterSelect" class="form-select">
+                                <option value="">All Meters</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="eventStartDate" class="form-label">Start Date</label>
+                            <input type="datetime-local" id="eventStartDate" class="form-control">
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label for="eventEndDate" class="form-label">End Date</label>
+                            <input type="datetime-local" id="eventEndDate" class="form-control">
+                        </div>
+                        <div class="col-12 col-md-3 d-grid">
+                            <button class="btn btn-primary w-100" id="filterEventsBtn">Filter Events</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>EventID</th>
+                                <th>MeterID</th>
+                                <th>Timestamp</th>
+                                <th>AvgCurrent</th>
+                                <th>AvgVoltage</th>
+                                <th>AvgPowerFactor</th>
+                                <th>Total_KW</th>
+                                <th>Total_KWH</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="alerts" role="tabpanel" aria-labelledby="alerts-tab">
+            <div class="mt-4">
+                <h2 class="mb-3">Triggered Alerts</h2>
+                <ul id="triggeredAlertsList" class="list-group">
+                </ul>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="alerts-setup" role="tabpanel" aria-labelledby="alerts-setup-tab">
+            <div class="mt-4">
+                <h3 class="mb-3">Active Alert Rules</h3>
+                <ul id="activeAlertsList" class="list-group mb-5">
+                </ul>
                 
                 <hr class="my-5">
 
-                <h2 class="mb-3">Historical Data Charts</h2>
+                <h3 class="mt-5">Alert Setup</h3>
                 <div class="card p-4 mb-4">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label for="chartMeterSelect" class="form-label">Meter</label>
-                            <select id="chartMeterSelect" class="form-select"></select>
+                    <form id="alertForm" class="row g-3">
+                        <input type="hidden" id="alertIndex" value="-1">
+                        <div class="col-12 col-md-3">
+                            <label for="alertMeterSelect" class="form-label">Meter</label>
+                            <select id="alertMeterSelect" class="form-select" required></select>
                         </div>
-                        <div class="col-md-3">
-                            <label for="chartStartDate" class="form-label">Start Date</label>
-                            <input type="datetime-local" id="chartStartDate" class="form-control">
+                        <div class="col-12 col-md-3">
+                            <label for="alertParamSelect" class="form-label">Parameter</label>
+                            <select id="alertParamSelect" class="form-select" required>
+                                <option value="" disabled selected>Select Parameter</option>
+                                <option value="AvgCurrent">AvgCurrent</option>
+                                <option value="AvgVoltage">AvgVoltage</option>
+                                <option value="Total_KW">Total_KW</option>
+                                <option value="Total_KWH">Total_KWH</option>
+                            </select>
                         </div>
-                        <div class="col-md-3">
-                            <label for="chartEndDate" class="form-label">End Date</label>
-                            <input type="datetime-local" id="chartEndDate" class="form-control">
+                        <div class="col-12 col-md-3">
+                            <label for="alertThreshold" class="form-label">Threshold Value</label>
+                            <input type="number" step="0.01" id="alertThreshold" class="form-control" placeholder="e.g., 25.5" required>
                         </div>
-                        <div class="col-md-3 d-flex align-items-end">
-                            <button class="btn btn-primary w-100" id="updateChartsBtn">Update Charts</button>
+                        <div class="col-12 col-md-3">
+                            <label for="alertMessage" class="form-label">Alert Message</label>
+                            <input type="text" id="alertMessage" class="form-control" placeholder="e.g., Current is too high!" required>
                         </div>
-                    </div>
-                </div>
-
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <div class="card p-3">
-                            <h5 class="card-title">Power Factor vs. Time</h5>
-                            <canvas id="powerFactorLineChart"></canvas>
+                        <div class="col-12 text-center d-grid">
+                            <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-save me-2"></i>Save Alert</button>
                         </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card p-3">
-                            <h5 class="card-title">Current vs. Time</h5>
-                            <canvas id="currentLineChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="events" role="tabpanel" aria-labelledby="events-tab">
-                <div class="mt-4">
-                    <h2 class="mb-3">Event Data</h2>
-                    <div class="card p-4 mb-4">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label for="eventMeterSelect" class="form-label">Meter</label>
-                                <select id="eventMeterSelect" class="form-select">
-                                    <option value="">All Meters</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="eventStartDate" class="form-label">Start Date</label>
-                                <input type="datetime-local" id="eventStartDate" class="form-control">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="eventEndDate" class="form-label">End Date</label>
-                                <input type="datetime-local" id="eventEndDate" class="form-control">
-                            </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <button class="btn btn-primary w-100" id="filterEventsBtn">Filter Events</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th>EventID</th>
-                                    <th>MeterID</th>
-                                    <th>Timestamp</th>
-                                    <th>AvgCurrent</th>
-                                    <th>AvgVoltage</th>
-                                    <th>AvgPowerFactor</th>
-                                    <th>Total_KW</th>
-                                    <th>Total_KWH</th>
-                                </tr>
-                            </thead>
-                            <tbody id="eventsTableBody">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="alerts" role="tabpanel" aria-labelledby="alerts-tab">
-                <div class="mt-4">
-                    <h2 class="mb-3">Triggered Alerts</h2>
-                    <ul id="triggeredAlertsList" class="list-group">
-                        </ul>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="alerts-setup" role="tabpanel" aria-labelledby="alerts-setup-tab">
-                <div class="mt-4">
-                    <h3 class="mb-3">Active Alert Rules</h3>
-                    <ul id="activeAlertsList" class="list-group mb-5">
-                        </ul>
-                    
-                    <hr class="my-5">
-
-                    <h3 class="mt-5">Alert Setup</h3>
-                    <div class="card p-4 mb-4">
-                        <form id="alertForm" class="row g-3">
-                            <input type="hidden" id="alertIndex" value="-1">
-                            <div class="col-md-3">
-                                <label for="alertMeterSelect" class="form-label">Meter</label>
-                                <select id="alertMeterSelect" class="form-select" required></select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="alertParamSelect" class="form-label">Parameter</label>
-                                <select id="alertParamSelect" class="form-select" required>
-                                    <option value="" disabled selected>Select Parameter</option>
-                                    <option value="AvgCurrent">AvgCurrent</option>
-                                    <option value="AvgVoltage">AvgVoltage</option>
-                                    <option value="Total_KW">Total_KW</option>
-                                    <option value="Total_KWH">Total_KWH</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="alertThreshold" class="form-label">Threshold Value</label>
-                                <input type="number" step="0.01" id="alertThreshold" class="form-control" placeholder="e.g., 25.5" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="alertMessage" class="form-label">Alert Message</label>
-                                <input type="text" id="alertMessage" class="form-control" placeholder="e.g., Current is too high!" required>
-                            </div>
-                            <div class="col-12 text-center">
-                                <button type="submit" class="btn btn-primary mt-3"><i class="bi bi-save me-2"></i>Save Alert</button>
-                            </div>
-                        </form>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="powerFactorModal" tabindex="-1" aria-labelledby="powerFactorModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content bg-dark text-white">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="powerFactorModalLabel">Power Factor vs. Time</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <canvas id="powerFactorModalChart"></canvas>
-                </div>
+<div class="modal fade" id="powerFactorModal" tabindex="-1" aria-labelledby="powerFactorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title" id="powerFactorModalLabel">Power Factor vs. Time</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="powerFactorModalChart"></canvas>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="currentModal" tabindex="-1" aria-labelledby="currentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content bg-dark text-white">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="currentModalLabel">Current vs. Time</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <canvas id="currentModalChart"></canvas>
-                </div>
+<div class="modal fade" id="currentModal" tabindex="-1" aria-labelledby="currentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header">
+                <h5 class="modal-title" id="currentModalLabel">Current vs. Time</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="currentModalChart"></canvas>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        </div>
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/dashboard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/dashboard.js"></script>
 </body>
 </html>
